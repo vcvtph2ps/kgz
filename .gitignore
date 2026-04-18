@@ -1,0 +1,7 @@
+/obj
+kgz_gunzip
+
+.cache
+compile_commands.json
+
+# kgz_singleheader.h
