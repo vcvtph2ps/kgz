@@ -6,10 +6,12 @@
 #ifndef KGZ_USE_OWN_MACROS
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define KGZ_MALLOC(size) malloc((size))
 #define KGZ_CALLOC(n, size) calloc((n), (size))
 #define KGZ_FREE(ptr) free((ptr))
+#define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 #define KGZ_PRINTF(...) printf(__VA_ARGS__)
 #endif
@@ -33,7 +35,7 @@ typedef struct kgz_bitstream {
     uint64_t current_byte;
     uint8_t current_bit;
     uint64_t bit_buffer;
-    uint8_t  bits_in_buffer;
+    uint8_t bits_in_buffer;
 } kgz_bitstream_t;
 
 /* kgz_buffer.c */
@@ -42,6 +44,10 @@ typedef struct {
     size_t size;
     size_t capacity;
 } kgz_buffer_t;
+
+extern bool kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte);
+extern bool kgz_buffer_insert_bulk(kgz_buffer_t* buffer, const uint8_t* src, size_t len);
+extern bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length);
 
 /* kgz_huffman.c */
 typedef struct huffman_tree huffman_tree_t;
@@ -68,6 +74,3 @@ extern bool kgz_deflate_decompress(kgz_decompression_context_t* context);
 extern huffman_tree_t* kgz_huffman_tree_create(uint16_t* codes, uint16_t codes_len, kgz_arena_t* arena);
 extern void kgz_huffman_tree_debug(huffman_tree_t* tree);
 extern bool kgz_huffman_tree_lookup(huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol);
-
-/* kgz_huffman.c */
-extern void kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte);

@@ -1,13 +1,37 @@
 #include "kgz_priv.h"
 
-void kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte) {
+bool kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte) {
     if(buffer->size >= buffer->capacity) {
-        size_t new_capacity = buffer->capacity * 2;
-        uint8_t* new_data = KGZ_CALLOC(1, new_capacity);
-        for(size_t i = 0; i < buffer->size; i++) { new_data[i] = buffer->data[i]; }
-        KGZ_FREE(buffer->data);
-        buffer->data = new_data;
-        buffer->capacity = new_capacity;
+        KGZ_PRINTF("output buffer overflow: size %zu capacity %zu\n", buffer->size, buffer->capacity);
+        return false;
     }
     buffer->data[buffer->size++] = byte;
+    return true;
+}
+
+bool kgz_buffer_insert_bulk(kgz_buffer_t* buffer, const uint8_t* src, size_t len) {
+    if(buffer->size + len > buffer->capacity) {
+        KGZ_PRINTF("output buffer overflow: need %zu have %zu\n", len, buffer->capacity - buffer->size);
+        return false;
+    }
+    KGZ_MEMCPY(buffer->data + buffer->size, src, len);
+    buffer->size += len;
+    return true;
+}
+
+bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
+    if(distance > buffer->size) return false;
+    if(buffer->size + length > buffer->capacity) {
+        KGZ_PRINTF("output buffer overflow during backcopy\n");
+        return false;
+    }
+
+    while(length > 0) {
+        size_t chunk = length < distance ? length : distance;
+        uint8_t* src = buffer->data + buffer->size - distance;
+        KGZ_MEMCPY(buffer->data + buffer->size, src, chunk);
+        buffer->size += chunk;
+        length -= chunk;
+    }
+    return true;
 }
