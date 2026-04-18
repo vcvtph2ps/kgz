@@ -39,7 +39,7 @@ bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
     return true;
 }
 
-bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, huffman_tree_t** ltree, huffman_tree_t** dtree) {
+bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huffman_tree_t** ltree, kgz_huffman_tree_t** dtree) {
     uint8_t hlit = kgz_bitstream_getbits(context->bitstream, 5);
     uint8_t hdist = kgz_bitstream_getbits(context->bitstream, 5);
     uint8_t hclen = kgz_bitstream_getbits(context->bitstream, 4);
@@ -47,7 +47,7 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, huffman
 
     for(int i = 0; i < hclen + 4; i++) { hsym_lengths[g_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
 
-    huffman_tree_t* htree = kgz_huffman_tree_create(hsym_lengths, 19, &context->arena_alloc);
+    kgz_huffman_tree_t* htree = kgz_huffman_tree_create(hsym_lengths, 19, &context->arena_alloc);
     if(!htree) return false;
 
     uint16_t symbol;
@@ -84,8 +84,8 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, huffman
 bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic) {
     uint16_t symbol = 0;
 
-    huffman_tree_t* dtree;
-    huffman_tree_t* ltree;
+    kgz_huffman_tree_t* dtree;
+    kgz_huffman_tree_t* ltree;
 
     if(dynamic) {
         if(!create_dynamic_huffman_tables(context, &ltree, &dtree)) return false;

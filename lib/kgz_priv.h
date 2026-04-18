@@ -50,10 +50,10 @@ extern bool kgz_buffer_insert_bulk(kgz_buffer_t* buffer, const uint8_t* src, siz
 extern bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length);
 
 /* kgz_huffman.c */
-typedef struct huffman_tree huffman_tree_t;
+typedef struct kgz_huffman_tree kgz_huffman_tree_t;
 
 typedef struct kgz_decompression_context {
-    huffman_tree_t* fixed_huffman_tree;
+    kgz_huffman_tree_t* fixed_huffman_tree;
     kgz_bitstream_t* bitstream;
     kgz_buffer_t output_buffer;
     kgz_arena_t arena_alloc;
@@ -71,6 +71,6 @@ extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_
 extern bool kgz_deflate_decompress(kgz_decompression_context_t* context);
 
 /* kgz_huffman.c */
-extern huffman_tree_t* kgz_huffman_tree_create(uint16_t* codes, uint16_t codes_len, kgz_arena_t* arena);
-extern void kgz_huffman_tree_debug(huffman_tree_t* tree);
-extern bool kgz_huffman_tree_lookup(huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol);
+extern kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* codes, uint16_t codes_len, kgz_arena_t* arena);
+extern void kgz_huffman_tree_debug(kgz_huffman_tree_t* tree);
+extern bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol);

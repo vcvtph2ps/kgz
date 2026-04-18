@@ -23,7 +23,7 @@ struct huffman_node {
     };
 };
 
-struct huffman_tree {
+struct kgz_huffman_tree {
     huffman_node_t* root;
 };
 
@@ -62,8 +62,8 @@ static inline bool insert_code(huffman_node_t* root, uint32_t code, uint16_t len
     return true;
 }
 
-huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
-    huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(huffman_tree_t), 8);
+kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
+    kgz_huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
     if(!tree) return nullptr;
 
     tree->root = alloc_new_node(arena);
@@ -98,7 +98,7 @@ huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbo
     return tree;
 }
 
-bool kgz_huffman_tree_lookup(huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol) {
+bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol) {
     *symbol = 0;
     huffman_node_t* current_node = tree->root;
     if(current_node == nullptr) { return false; }
