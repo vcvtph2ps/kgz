@@ -51,6 +51,8 @@ typedef struct kgz_bitstream {
     uint64_t data_len;
     uint64_t current_byte;
     uint8_t current_bit;
+    uint64_t bit_buffer;
+    uint8_t  bits_in_buffer;
 } kgz_bitstream_t;
 typedef struct {
     uint8_t* data;
@@ -65,43 +67,52 @@ typedef struct kgz_decompression_context {
     kgz_arena_t arena_alloc;
 } kgz_decompression_context_t;
 extern uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits);
-extern uint8_t kgz_bitstream_getbit_msb(kgz_bitstream_t* stream);
 extern uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream);
 extern uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream);
-extern uint32_t kgz_bitstream_read_u32(kgz_bitstream_t* stream);
+extern void kgz_bitstream_align(kgz_bitstream_t* stream);
 extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out);
 extern bool kgz_deflate_decompress(kgz_decompression_context_t* context);
 extern huffman_tree_t* kgz_huffman_tree_create(uint16_t* codes, uint16_t codes_len, kgz_arena_t* arena);
 extern void kgz_huffman_tree_debug(huffman_tree_t* tree);
 extern bool kgz_huffman_tree_lookup(huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol);
 extern void kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte);
-uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
-    uint32_t result = 0;
-    for(uint32_t i = 0; i < bits; i++) {
-        uint8_t byte = stream->data[stream->current_byte];
-        uint8_t bit = (byte >> stream->current_bit) & 1;
-        result |= ((uint32_t) bit << i);
-        if(++stream->current_bit == 8) {
-            stream->current_bit = 0;
-            stream->current_byte++;
-        }
+static inline void kgz_bitstream_fill(kgz_bitstream_t* stream) {
+    while (stream->bits_in_buffer <= 56) {
+        uint64_t byte_idx = stream->current_byte +
+        (stream->current_bit + stream->bits_in_buffer) / 8;
+        if (byte_idx >= stream->data_len)
+            break;
+        stream->bit_buffer |= ((uint64_t)stream->data[byte_idx] << stream->bits_in_buffer);
+        stream->bits_in_buffer += 8;
     }
+}
+uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
+    if (bits == 0) return 0;
+    if (stream->bits_in_buffer < bits)
+        kgz_bitstream_fill(stream);
+    uint64_t mask   = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
+    uint32_t result = (uint32_t)(stream->bit_buffer & mask);
+    stream->bit_buffer     >>= bits;
+    stream->bits_in_buffer  -= bits;
+    stream->current_bit     += bits;
+    stream->current_byte    += stream->current_bit / 8;
+    stream->current_bit     &= 7;
     return result;
 }
+void kgz_bitstream_align(kgz_bitstream_t* stream) {
+    if (stream->current_bit != 0) {
+        uint8_t skip = 8 - stream->current_bit;
+        stream->bit_buffer     >>= skip;
+        stream->bits_in_buffer  -= (stream->bits_in_buffer >= skip) ? skip : stream->bits_in_buffer;
+        stream->current_byte++;
+        stream->current_bit = 0;
+    }
+}
 uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
-    return (uint8_t) kgz_bitstream_getbits(stream, 8);
+    return (uint8_t)kgz_bitstream_getbits(stream, 8);
 }
 uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
-    uint16_t b0 = kgz_bitstream_getbits(stream, 8);
-    uint16_t b1 = kgz_bitstream_getbits(stream, 8);
-    return (uint16_t) (b0 | (b1 << 8));
-}
-uint32_t kgz_bitstream_read_u32(kgz_bitstream_t* stream) {
-    uint32_t b0 = kgz_bitstream_getbits(stream, 8);
-    uint32_t b1 = kgz_bitstream_getbits(stream, 8);
-    uint32_t b2 = kgz_bitstream_getbits(stream, 8);
-    uint32_t b3 = kgz_bitstream_getbits(stream, 8);
-    return (b0 | (b1 << 8) | (b2 << 16) | (b3 << 24));
+    return (uint16_t)kgz_bitstream_getbits(stream, 16);
 }
 #define CHECK_BOUNDS(curr, size, needed)               \
     do {                                               \
@@ -156,6 +167,8 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     deflate_bitstream.data_len = data_size - current_byte - 8;
     deflate_bitstream.current_byte = 0;
     deflate_bitstream.current_bit = 0;
+    deflate_bitstream.bit_buffer = 0;
+    deflate_bitstream.bits_in_buffer = 0;
     uint64_t footer_offset = data_size - 8;
     uint32_t decompressed_size = 0;
     decompressed_size |= (uint32_t) u8data[footer_offset + 4];
@@ -212,10 +225,7 @@ static const uint8_t g_dist_extra_bits[30] = {
 };
 static const uint8_t g_clen_alpha_order[19] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
-    if(context->bitstream->current_bit != 0) {
-        context->bitstream->current_byte++;
-        context->bitstream->current_bit = 0;
-    }
+    kgz_bitstream_align(context->bitstream);
     uint16_t len = kgz_bitstream_read_u16(context->bitstream);
     uint16_t nlen = kgz_bitstream_read_u16(context->bitstream);
     if(len != (~nlen & 0xffff)) {
@@ -420,14 +430,6 @@ bool kgz_huffman_tree_lookup(huffman_tree_t* tree, kgz_bitstream_t* stream, uint
     return false;
 }
 void kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte) {
-    if(buffer->size >= buffer->capacity) {
-        size_t new_capacity = buffer->capacity * 2;
-        uint8_t* new_data = KGZ_CALLOC(1, new_capacity);
-        for(size_t i = 0; i < buffer->size; i++) { new_data[i] = buffer->data[i]; }
-        KGZ_FREE(buffer->data);
-        buffer->data = new_data;
-        buffer->capacity = new_capacity;
-    }
     buffer->data[buffer->size++] = byte;
 }
 #include <stdio.h>

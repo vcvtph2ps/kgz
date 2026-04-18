@@ -32,6 +32,8 @@ typedef struct kgz_bitstream {
     uint64_t data_len;
     uint64_t current_byte;
     uint8_t current_bit;
+    uint64_t bit_buffer;
+    uint8_t  bits_in_buffer;
 } kgz_bitstream_t;
 
 /* kgz_buffer.c */
@@ -52,10 +54,9 @@ typedef struct kgz_decompression_context {
 } kgz_decompression_context_t;
 
 extern uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits);
-extern uint8_t kgz_bitstream_getbit_msb(kgz_bitstream_t* stream);
 extern uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream);
 extern uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream);
-extern uint32_t kgz_bitstream_read_u32(kgz_bitstream_t* stream);
+extern void kgz_bitstream_align(kgz_bitstream_t* stream);
 
 /* kgz_gzip.c */
 extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out);

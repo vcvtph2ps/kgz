@@ -75,6 +75,8 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     deflate_bitstream.data_len = data_size - current_byte - 8;
     deflate_bitstream.current_byte = 0;
     deflate_bitstream.current_bit = 0;
+    deflate_bitstream.bit_buffer = 0;
+    deflate_bitstream.bits_in_buffer = 0;
 
     uint64_t footer_offset = data_size - 8;
     uint32_t decompressed_size = 0;

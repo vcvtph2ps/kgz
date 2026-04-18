@@ -21,10 +21,7 @@ static const uint8_t g_dist_extra_bits[30] = {
 static const uint8_t g_clen_alpha_order[19] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
 bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
-    if(context->bitstream->current_bit != 0) {
-        context->bitstream->current_byte++;
-        context->bitstream->current_bit = 0;
-    }
+    kgz_bitstream_align(context->bitstream);
 
     uint16_t len = kgz_bitstream_read_u16(context->bitstream);
     uint16_t nlen = kgz_bitstream_read_u16(context->bitstream);
