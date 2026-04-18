@@ -53,6 +53,7 @@ my @steps = (
     step { my ($out) = @_; emit_file($out,   "./lib/kgz_deflate.c") },
     step { my ($out) = @_; emit_file($out,   "./lib/kgz_huffman.c") },
     step { my ($out) = @_; emit_file($out,   "./lib/kgz_buffer.c") },
+    step { my ($out) = @_; emit_file($out,   "./lib/kgz_arena.c") },
     step { my ($out) = @_; emit_string($out, "#endif") },
 );
 

@@ -1,6 +1,6 @@
 CC            := clang
 LDFLAGS       := -flto
-SRC           := ./examples/kgz_gunzip.c ./lib/kgz_gzip.c ./lib/kgz_deflate.c ./lib/kgz_huffman.c ./lib/kgz_bitstream.c ./lib/kgz_buffer.c
+SRC           := ./examples/kgz_gunzip.c ./lib/kgz_gzip.c ./lib/kgz_deflate.c ./lib/kgz_huffman.c ./lib/kgz_bitstream.c ./lib/kgz_buffer.c ./lib/kgz_arena.c
 COMMON_CFLAGS := -Wall -Wextra -std=c23 -g -O2 -flto -I./lib
 
 MAIN_TARGET    := kgz_gunzip

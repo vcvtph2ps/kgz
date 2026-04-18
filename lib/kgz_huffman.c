@@ -27,42 +27,25 @@ struct huffman_tree {
     huffman_node_t* root;
 };
 
-static inline void destroy_node(huffman_node_t* node) {
-    if(!node) return;
-    if(node->type == HUFFMAN_NODE_TYPE_INTERNAL) {
-        destroy_node(node->internal.zero);
-        destroy_node(node->internal.one);
-    }
-
-    KGZ_FREE(node);
-}
-
-void kgz_huffman_tree_destroy(huffman_tree_t* tree) {
-    if(!tree) return;
-
-    destroy_node(tree->root);
-    KGZ_FREE(tree);
-}
-
 #define MAX_BITS 15
 
-static inline huffman_node_t* alloc_new_node(void) {
-    huffman_node_t* node = KGZ_CALLOC(1, sizeof(huffman_node_t));
+static inline huffman_node_t* alloc_new_node(kgz_arena_t* arena) {
+    huffman_node_t* node = kgz_arena_allocate(arena, sizeof(huffman_node_t), 8);
     node->type = HUFFMAN_NODE_TYPE_INTERNAL;
     return node;
 }
 
-static inline void insert_code(huffman_node_t* root, uint32_t code, uint16_t len, uint16_t symbol) {
+static inline void insert_code(huffman_node_t* root, uint32_t code, uint16_t len, uint16_t symbol, kgz_arena_t* arena) {
     huffman_node_t* node = root;
 
     for(int i = len - 1; i >= 0; i--) {
         uint32_t bit = (code >> i) & 1;
 
         if(bit == 0) {
-            if(!node->internal.zero) { node->internal.zero = alloc_new_node(); }
+            if(!node->internal.zero) { node->internal.zero = alloc_new_node(arena); }
             node = node->internal.zero;
         } else {
-            if(!node->internal.one) { node->internal.one = alloc_new_node(); }
+            if(!node->internal.one) { node->internal.one = alloc_new_node(arena); }
             node = node->internal.one;
         }
     }
@@ -71,14 +54,13 @@ static inline void insert_code(huffman_node_t* root, uint32_t code, uint16_t len
     node->symbol.symbol = symbol;
 }
 
-huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count) {
-    huffman_tree_t* tree = KGZ_CALLOC(1, sizeof(huffman_tree_t));
-    tree->root = alloc_new_node();
+huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
+    huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(huffman_tree_t), 8);
+    tree->root = alloc_new_node(arena);
 
     size_t bl_count[MAX_BITS + 1] = { 0 };
     for(size_t i = 0; i < symbol_count; i++) {
         if(symbol_lengths[i] > MAX_BITS) {
-            kgz_huffman_tree_destroy(tree);
             return nullptr;
         }
         if(symbol_lengths[i] == 0) { continue; }
@@ -99,7 +81,7 @@ huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbo
         uint16_t symbol_length = symbol_lengths[sym];
 
         if(symbol_length != 0) {
-            insert_code(tree->root, next_code[symbol_length], symbol_length, sym);
+            insert_code(tree->root, next_code[symbol_length], symbol_length, sym, arena);
             next_code[symbol_length]++;
         }
     }
