@@ -51,14 +51,13 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, huffman
     for(int i = 0; i < hclen + 4; i++) { hsym_lengths[g_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
 
     huffman_tree_t* htree = kgz_huffman_tree_create(hsym_lengths, 19, &context->arena_alloc);
+    if(!htree) return false;
 
     uint16_t symbol;
     uint16_t sym_lengths[288 + 32] = { 0 };
     for(int i = 0; i < (hlit + 257) + (hdist + 1);) {
         bool v = kgz_huffman_tree_lookup(htree, context->bitstream, &symbol);
-        if(!v) {
-            return false;
-        }
+        if(!v) { return false; }
 
         if(symbol <= 15) {
             sym_lengths[i] = symbol;
@@ -66,9 +65,7 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, huffman
             continue;
         } else if(symbol == 16) {
             uint8_t times = kgz_bitstream_getbits(context->bitstream, 2) + 3;
-            if(i <= 0) {
-                return false;
-            }
+            if(i <= 0) { return false; }
             uint16_t value = sym_lengths[i - 1];
             for(int j = 0; j < times; j++, i++) { sym_lengths[i] = value; }
         } else if(symbol == 17) {
@@ -81,7 +78,9 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, huffman
     }
 
     *dtree = kgz_huffman_tree_create(&sym_lengths[hlit + 257], hdist + 1, &context->arena_alloc);
-    *ltree = kgz_huffman_tree_create(sym_lengths, hlit + 257,  &context->arena_alloc);
+    if(!*dtree) return false;
+    *ltree = kgz_huffman_tree_create(sym_lengths, hlit + 257, &context->arena_alloc);
+    if(!*ltree) return false;
     return true;
 }
 
@@ -113,9 +112,7 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
 
         uint16_t distance_symbol;
         if(dynamic) {
-            if(!kgz_huffman_tree_lookup(dtree, context->bitstream, &distance_symbol)) {
-                return false;
-            }
+            if(!kgz_huffman_tree_lookup(dtree, context->bitstream, &distance_symbol)) { return false; }
         } else {
             distance_symbol = kgz_bitstream_getbits(context->bitstream, 5);
             {
@@ -131,9 +128,7 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
         uint16_t extra_dist = kgz_bitstream_getbits(context->bitstream, g_dist_extra_bits[distance_symbol]);
         uint16_t distance = g_base_dist[distance_symbol] + extra_dist;
 
-        if(distance > context->output_buffer.size) {
-            return false;
-        }
+        if(distance > context->output_buffer.size) { return false; }
 
         for(size_t i = 0; i < length; i++) { kgz_buffer_insert(&context->output_buffer, context->output_buffer.data[context->output_buffer.size - distance]); }
     }

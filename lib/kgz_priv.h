@@ -16,15 +16,15 @@
 
 /* kgz_arena.c */
 typedef struct kgz_arena {
-    uint8_t *buffer;
+    uint8_t* buffer;
     size_t capacity;
     size_t offset;
 } kgz_arena_t;
 
-void kgz_arena_init(kgz_arena_t *arena, size_t capacity);
-void kgz_arena_reset(kgz_arena_t *arena);
-void *kgz_arena_allocate(kgz_arena_t *arena, size_t size, size_t alignment);
-void kgz_arena_free(kgz_arena_t *arena);
+void kgz_arena_init(kgz_arena_t* arena, size_t capacity);
+void kgz_arena_reset(kgz_arena_t* arena);
+void* kgz_arena_allocate(kgz_arena_t* arena, size_t size, size_t alignment);
+void kgz_arena_free(kgz_arena_t* arena);
 
 /* kgz_bitstream.c */
 typedef struct kgz_bitstream {

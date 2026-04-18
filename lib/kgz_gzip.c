@@ -88,7 +88,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     context.output_buffer.data = KGZ_CALLOC(1, decompressed_size);
     context.output_buffer.size = 0;
     context.output_buffer.capacity = decompressed_size;
-    kgz_arena_init(&context.arena_alloc, 1024 * 256); // 256kb
+    kgz_arena_init(&context.arena_alloc, 1024 * 24); // 24kb
 
     uint16_t codes[288] = { 0 };
     for(size_t i = 0; i < 288; i++) {
@@ -103,8 +103,14 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     }
 
     kgz_arena_t fixed_huffman_arena;
-    kgz_arena_init(&fixed_huffman_arena, 1024 * 256); // 256kb
+    kgz_arena_init(&fixed_huffman_arena, 1024 * 16); // 16kb
     context.fixed_huffman_tree = kgz_huffman_tree_create(codes, 288, &fixed_huffman_arena);
+    if(!context.fixed_huffman_tree) {
+        kgz_arena_free(&context.arena_alloc);
+        kgz_arena_free(&fixed_huffman_arena);
+        KGZ_FREE(context.output_buffer.data);
+        return nullptr;
+    }
 
     bool success = kgz_deflate_decompress(&context);
 
