@@ -26,12 +26,11 @@ uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
 
 void kgz_bitstream_align(kgz_bitstream_t* stream) {
     if(stream->current_bit != 0) {
-        uint8_t skip = 8 - stream->current_bit;
-        stream->bit_buffer >>= skip;
-        stream->bits_in_buffer -= (stream->bits_in_buffer >= skip) ? skip : stream->bits_in_buffer;
         stream->current_byte++;
         stream->current_bit = 0;
     }
+    stream->bit_buffer = 0;
+    stream->bits_in_buffer = 0;
 }
 
 uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
@@ -45,4 +44,20 @@ uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
         return word;
     }
     return (uint16_t) kgz_bitstream_getbits(stream, 16);
+}
+
+uint32_t kgz_bitstream_peek(kgz_bitstream_t* stream, uint32_t bits) {
+    if(bits == 0) return 0;
+    if(stream->bits_in_buffer < bits) kgz_bitstream_fill(stream);
+    uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
+    return (uint32_t) (stream->bit_buffer & mask);
+}
+
+void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
+    if(bits == 0) return;
+    stream->bit_buffer >>= bits;
+    stream->bits_in_buffer -= bits;
+    stream->current_bit += bits;
+    stream->current_byte += stream->current_bit / 8;
+    stream->current_bit &= 7;
 }

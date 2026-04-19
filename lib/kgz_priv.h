@@ -14,6 +14,7 @@
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 #define KGZ_PRINTF(...) printf(__VA_ARGS__)
+#define KGZ_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif
 
 /* kgz_arena.c */
@@ -60,6 +61,8 @@ typedef struct kgz_decompression_context {
 } kgz_decompression_context_t;
 
 extern uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits);
+extern uint32_t kgz_bitstream_peek(kgz_bitstream_t* stream, uint32_t bits);
+extern void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits);
 extern uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream);
 extern uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream);
 extern void kgz_bitstream_align(kgz_bitstream_t* stream);
