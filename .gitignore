@@ -2,6 +2,10 @@
 kgz_gunzip
 
 .cache
+.thinlto-cache
+
 compile_commands.json
 
 # kgz_singleheader.h
+
+gzexamples/
