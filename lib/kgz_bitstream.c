@@ -39,5 +39,10 @@ uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
 }
 
 uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
+    if(stream->current_bit == 0 && stream->current_byte + 1 < stream->data_len) {
+        uint16_t word = (uint16_t) stream->data[stream->current_byte] | ((uint16_t) stream->data[stream->current_byte + 1] << 8);
+        stream->current_byte += 2;
+        return word;
+    }
     return (uint16_t) kgz_bitstream_getbits(stream, 16);
 }
