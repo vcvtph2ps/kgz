@@ -2,6 +2,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* custom user options */
+
+/* huffman tree cache size */
+#ifndef KGZ_HUFFMAN_CACHE
+#define KGZ_HUFFMAN_CACHE 10
+#endif
+_Static_assert((KGZ_HUFFMAN_CACHE) >= 3,  "KGZ_HUFFMAN_CACHE must be at least 3");
+_Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15");
+
 /* portability stuff */
 #ifndef KGZ_USE_OWN_MACROS
 #include <stdio.h>
@@ -14,8 +23,12 @@
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 #define KGZ_PRINTF(...) printf(__VA_ARGS__)
+#endif
+
+#ifndef KGZ_EXPECT
 #define KGZ_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif
+
 
 /* kgz_arena.c */
 typedef struct kgz_arena {
@@ -51,6 +64,10 @@ extern bool kgz_buffer_insert_bulk(kgz_buffer_t* buffer, const uint8_t* src, siz
 extern bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length);
 
 /* kgz_huffman.c */
+typedef struct {
+    uint16_t symbol;
+    int8_t length; // -1 = walk tree
+} huffman_cache_entry_t;
 typedef struct kgz_huffman_tree kgz_huffman_tree_t;
 
 typedef struct kgz_decompression_context {
@@ -68,7 +85,7 @@ extern uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream);
 extern void kgz_bitstream_align(kgz_bitstream_t* stream);
 
 /* kgz_gzip.c */
-extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out);
+extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out);
 
 /* kgz_deflate.c */
 extern bool kgz_deflate_decompress(kgz_decompression_context_t* context);

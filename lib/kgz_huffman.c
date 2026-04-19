@@ -23,12 +23,7 @@ struct huffman_node {
     };
 };
 
-typedef struct {
-    uint16_t symbol;
-    int8_t length; // -1 = walk tree
-} huffman_cache_entry_t;
-
-#define TABLE_BITS 9
+#define TABLE_BITS (KGZ_HUFFMAN_CACHE)
 
 struct kgz_huffman_tree {
     huffman_cache_entry_t table[1 << TABLE_BITS];
@@ -52,11 +47,10 @@ static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) 
 static inline int32_t alloc_new_node(kgz_huffman_tree_t* tree, kgz_arena_t* arena) {
     if(tree->nodes_count >= tree->nodes_capacity) {
         int32_t new_capacity = tree->nodes_capacity == 0 ? 16 : tree->nodes_capacity * 2;
-        huffman_node_t* new_nodes = KGZ_CALLOC(1, sizeof(huffman_node_t) * new_capacity);
+        huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * new_capacity, 8);
         if(!new_nodes) return -1;
 
         if(tree->nodes) { memcpy(new_nodes, tree->nodes, sizeof(huffman_node_t) * tree->nodes_count); }
-        KGZ_FREE(tree->nodes);
         tree->nodes = new_nodes;
         tree->nodes_capacity = new_capacity;
     }

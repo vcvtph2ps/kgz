@@ -22,7 +22,7 @@ $(MAIN_BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(MAIN_CFLAGS) -c $< -o $@
 
--include $(MAIN_DEP) $(DBG_DEP)
+-include $(MAIN_DEP)
 
 clean:
-	rm -rf obj $(MAIN_TARGET) $(DBG_TARGET)
+	rm -rf obj $(MAIN_TARGET)
