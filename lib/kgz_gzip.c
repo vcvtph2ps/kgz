@@ -13,7 +13,7 @@
 #define FNAME (1 << 3)
 #define FCOMMENT (1 << 4)
 
-void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out) {
+void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out) {
     uint8_t* u8data = (uint8_t*) data;
     uint64_t current_byte = 0;
 
@@ -87,9 +87,9 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
 
     kgz_decompression_context_t context;
     context.bitstream = &deflate_bitstream;
-    context.output_buffer.data = KGZ_CALLOC(1, decompressed_size);
+    context.output_buffer.data = KGZ_CALLOC(1, decompressed_size + 1024);
     context.output_buffer.size = 0;
-    context.output_buffer.capacity = decompressed_size;
+    context.output_buffer.capacity = decompressed_size + 1024;
     kgz_arena_init(&context.arena_alloc, 1024 * 24); // 24kb
 
     uint16_t codes[288] = { 0 };
@@ -125,5 +125,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     }
 
     if(data_size_out) *data_size_out = decompressed_size;
+    if(buffer_size_out) *buffer_size_out = context.output_buffer.capacity;
+
     return context.output_buffer.data;
 }

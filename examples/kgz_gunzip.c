@@ -36,8 +36,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    uint64_t result_size;
-    void* decompressed_data = kgz_gzip_decompress(file, filesize, &result_size);
+    uint64_t result_size; // size of decompressed data
+    uint64_t buffer_size; // size of allocated buffer (may be larger than result_size)
+    void* decompressed_data = kgz_gzip_decompress(file, filesize, &result_size, &buffer_size);
 
     if(decompressed_data == nullptr) {
         printf("failed to decompress\n");
