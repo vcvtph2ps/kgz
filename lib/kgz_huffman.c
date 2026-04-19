@@ -103,6 +103,9 @@ uint32_t bit_reverse(uint32_t code, uint32_t bits) {
 
 kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
     kgz_huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
+    tree->nodes = nullptr;
+    tree->nodes_capacity = 0;
+    tree->nodes_count = 0;
     if(!tree) return nullptr;
 
     tree->root_index = alloc_new_node(tree, arena);

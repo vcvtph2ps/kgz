@@ -36,7 +36,6 @@ void* kgz_arena_allocate(kgz_arena_t* arena, size_t size, size_t alignment) {
     if(new_offset > arena->capacity) { return nullptr; }
 
     void* ptr = (void*) aligned;
-    KGZ_MEMSET(ptr, 0, size);
 
     arena->offset = new_offset;
     return ptr;

@@ -87,7 +87,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
 
     kgz_decompression_context_t context;
     context.bitstream = &deflate_bitstream;
-    context.output_buffer.data = KGZ_CALLOC(1, decompressed_size + 1024);
+    context.output_buffer.data = KGZ_MALLOC(decompressed_size + 1024);
     context.output_buffer.size = 0;
     context.output_buffer.capacity = decompressed_size + 1024;
     kgz_arena_init(&context.arena_alloc, (1024 * 32) + ((sizeof(huffman_cache_entry_t) * 3) * (1 << (KGZ_HUFFMAN_CACHE)))); // 32kb base + cache augment
