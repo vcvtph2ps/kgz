@@ -26,12 +26,16 @@ bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
         return false;
     }
 
-    while(length > 0) {
-        size_t chunk = length < distance ? length : distance;
-        uint8_t* src = buffer->data + buffer->size - distance;
-        KGZ_MEMCPY(buffer->data + buffer->size, src, chunk);
-        buffer->size += chunk;
-        length -= chunk;
+    uint8_t* dest = buffer->data + buffer->size;
+    const uint8_t* src = dest - distance;
+    if(distance == 1) {
+        memset(dest, src[0], length);
+    } else if(distance >= length) {
+        KGZ_MEMCPY(dest, src, length);
+    } else {
+        for(size_t i = 0; i < length; i++) { dest[i] = src[i]; }
     }
+
+    buffer->size += length;
     return true;
 }
