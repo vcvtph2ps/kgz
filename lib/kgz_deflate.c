@@ -98,12 +98,11 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
 
         bool v = kgz_huffman_tree_lookup(ltree, context->bitstream, &symbol);
         if(!v) break;
-        if(symbol == 256) break;
-
         if(symbol < 256) {
             if(!kgz_buffer_insert(&context->output_buffer, (uint8_t) symbol)) return false;
             continue;
         }
+        if(symbol == 256) break;
 
         uint8_t extra_length_bits = g_length_extra_bits[symbol - 257];
         uint16_t length = g_base_length[symbol - 257] + kgz_bitstream_getbits(context->bitstream, extra_length_bits);
