@@ -37,10 +37,7 @@ struct kgz_huffman_tree {
 #define MAX_BITS 15
 
 static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) {
-    if(index < 0 || index >= tree->nodes_count) {
-        printf("Lookup failed: index out of bounds (%d)\n", index);
-        return nullptr;
-    }
+    if(index < 0 || index >= tree->nodes_count) { return nullptr; }
     return &tree->nodes[index];
 }
 
@@ -151,7 +148,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
     return tree;
 }
 
-bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol) {
+bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol, uint32_t bits) {
     huffman_node_t* current_node = get_node(tree, tree->root_index);
     if(current_node == nullptr) { return false; }
 
@@ -159,31 +156,38 @@ bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* str
     while(1) {
         if(current_node->type == HUFFMAN_NODE_TYPE_SYMBOL) {
             *symbol = current_node->symbol.symbol;
+            kgz_bitstream_consume(stream, current_length);
             return true;
         }
 
-        uint8_t bit = kgz_bitstream_getbits(stream, 1);
+        uint32_t bit = (bits >> (current_length)) & 1;
         current_node = get_node(tree, bit ? current_node->internal.one_index : current_node->internal.zero_index);
 
-        if(current_node == nullptr) { return false; }
+        if(current_node == nullptr) {
+            kgz_bitstream_consume(stream, current_length);
+            return false;
+        }
 
         current_length++;
-        if(current_length > 15) { return false; }
+        if(current_length > MAX_BITS) {
+            kgz_bitstream_consume(stream, current_length);
+            return false;
+        }
     }
+
+    kgz_bitstream_consume(stream, current_length);
     return false;
 }
 
 bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol) {
-    *symbol = 0;
-
-    uint32_t bits = kgz_bitstream_peek(stream, TABLE_BITS);
+    uint32_t bits = kgz_bitstream_peek(stream, MAX_BITS);
     huffman_cache_entry_t entry = tree->table[bits & ((1 << TABLE_BITS) - 1)];
 
     if(entry.length > 0) {
-        kgz_bitstream_getbits(stream, entry.length);
+        kgz_bitstream_consume(stream, entry.length);
         *symbol = entry.symbol;
         return true;
     }
 
-    return kgz_huffman_tree_lookup_slow(tree, stream, symbol);
+    return kgz_huffman_tree_lookup_slow(tree, stream, symbol, bits);
 }
