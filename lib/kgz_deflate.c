@@ -40,9 +40,11 @@ bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
 }
 
 bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huffman_tree_t** ltree, kgz_huffman_tree_t** dtree) {
-    uint8_t hlit = kgz_bitstream_getbits(context->bitstream, 5);
-    uint8_t hdist = kgz_bitstream_getbits(context->bitstream, 5);
-    uint8_t hclen = kgz_bitstream_getbits(context->bitstream, 4);
+    uint32_t data = kgz_bitstream_peek(context->bitstream, 5 + 5 + 4);
+    kgz_bitstream_consume(context->bitstream, 5 + 5 + 4);
+    uint8_t hlit = data & 0x1f;
+    uint8_t hdist = (data >> 5) & 0x1f;
+    uint8_t hclen = (data >> 10) & 0xf;
     uint16_t hsym_lengths[19] = { 0 };
 
     for(int i = 0; i < hclen + 4; i++) { hsym_lengths[g_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
