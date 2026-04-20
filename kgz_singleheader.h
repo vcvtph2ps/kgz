@@ -106,12 +106,13 @@ extern bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* s
 static inline void kgz_bitstream_fill(kgz_bitstream_t* stream) {
     uint8_t bits = stream->bits_in_buffer;
     uint64_t cur_byte = stream->current_byte + ((stream->current_bit + bits) >> 3);
-    const uint8_t* data = stream->data;
+    const uint8_t* p = stream->data + cur_byte;
     uint64_t data_len = stream->data_len;
     uint64_t bit_buffer = stream->bit_buffer;
     while(bits <= 56 && cur_byte < data_len) {
-        bit_buffer |= ((uint64_t) data[cur_byte++] << bits);
+        bit_buffer |= ((uint64_t) *p++ << bits);
         bits += 8;
+        cur_byte++;
     }
     stream->bits_in_buffer = bits;
     stream->bit_buffer = bit_buffer;
@@ -141,7 +142,10 @@ uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
 }
 uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
     if(KGZ_LIKELY(stream->current_bit == 0 && stream->current_byte + 1 < stream->data_len)) {
-        uint16_t word = (uint16_t) stream->data[stream->current_byte] | ((uint16_t) stream->data[stream->current_byte + 1] << 8);
+        const uint8_t* p = stream->data + stream->current_byte;
+        uint16_t lo = *p++;
+        uint16_t hi = *p++;
+        uint16_t word = lo | (hi << 8);
         stream->current_byte += 2;
         return word;
     }
