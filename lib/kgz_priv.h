@@ -8,7 +8,7 @@
 #ifndef KGZ_HUFFMAN_CACHE
 #define KGZ_HUFFMAN_CACHE 10
 #endif
-_Static_assert((KGZ_HUFFMAN_CACHE) >= 3,  "KGZ_HUFFMAN_CACHE must be at least 3");
+_Static_assert((KGZ_HUFFMAN_CACHE) >= 3, "KGZ_HUFFMAN_CACHE must be at least 3");
 _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15");
 
 /* portability stuff */
@@ -27,6 +27,18 @@ _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15"
 
 #ifndef KGZ_EXPECT
 #define KGZ_EXPECT(...) __builtin_expect(__VA_ARGS__)
+#endif
+
+#ifndef KGZ_LIKELY
+#define KGZ_LIKELY(x) KGZ_EXPECT(!!(x), 1)
+#endif
+
+#ifndef KGZ_UNLIKELY
+#define KGZ_UNLIKELY(x) KGZ_EXPECT(!!(x), 0)
+#endif
+
+#ifndef KGZ_UNREACHABLE
+#define KGZ_UNREACHABLE(x) __builtin_unreachable()
 #endif
 
 

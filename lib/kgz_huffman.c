@@ -37,15 +37,15 @@ struct kgz_huffman_tree {
 #define MAX_BITS 15
 
 static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) {
-    if(index < 0 || index >= tree->nodes_count) { return nullptr; }
+    if(KGZ_UNLIKELY(index < 0 || index >= tree->nodes_count)) return nullptr;
     return &tree->nodes[index];
 }
 
 static inline int32_t alloc_new_node(kgz_huffman_tree_t* tree, kgz_arena_t* arena) {
-    if(tree->nodes_count >= tree->nodes_capacity) {
+    if(KGZ_UNLIKELY(tree->nodes_count >= tree->nodes_capacity)) {
         int32_t new_capacity = tree->nodes_capacity == 0 ? 16 : tree->nodes_capacity * 2;
         huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * new_capacity, 8);
-        if(!new_nodes) return -1;
+        if(KGZ_UNLIKELY(!new_nodes)) return -1;
 
         if(tree->nodes) { memcpy(new_nodes, tree->nodes, sizeof(huffman_node_t) * tree->nodes_count); }
         tree->nodes = new_nodes;
@@ -68,14 +68,14 @@ static inline bool insert_code(kgz_huffman_tree_t* tree, uint32_t code, uint16_t
         if(bit == 0) {
             if(get_node(tree, current_index)->internal.zero_index == -1) {
                 int32_t new_index = alloc_new_node(tree, arena);
-                if(new_index == -1) return false;
+                if(KGZ_UNLIKELY(new_index == -1)) return false;
                 get_node(tree, current_index)->internal.zero_index = new_index;
             }
             current_index = get_node(tree, current_index)->internal.zero_index;
         } else {
             if(get_node(tree, current_index)->internal.one_index == -1) {
                 int32_t new_index = alloc_new_node(tree, arena);
-                if(new_index == -1) return false;
+                if(KGZ_UNLIKELY(new_index == -1)) return false;
                 get_node(tree, current_index)->internal.one_index = new_index;
             }
             current_index = get_node(tree, current_index)->internal.one_index;
@@ -150,7 +150,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
 
 bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol, uint32_t bits) {
     huffman_node_t* current_node = get_node(tree, tree->root_index);
-    if(current_node == nullptr) { return false; }
+    if(current_node == nullptr) return false;
 
     int current_length = 0;
     while(1) {
@@ -161,25 +161,26 @@ bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* str
         }
 
         uint32_t bit = (bits >> (current_length)) & 1;
-        current_node = get_node(tree, bit ? current_node->internal.one_index : current_node->internal.zero_index);
+        int32_t index = bit ? current_node->internal.one_index : current_node->internal.zero_index;
 
-        if(current_node == nullptr) {
+        if(KGZ_UNLIKELY(index == -1)) {
             kgz_bitstream_consume(stream, current_length);
             return false;
         }
 
+        current_node = get_node(tree, index);
         current_length++;
-        if(current_length > MAX_BITS) {
+        if(KGZ_UNLIKELY(current_length > 15)) {
             kgz_bitstream_consume(stream, current_length);
             return false;
         }
     }
-
-    kgz_bitstream_consume(stream, current_length);
-    return false;
+    KGZ_UNREACHABLE();
 }
 
 bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol) {
+    *symbol = 0;
+
     uint32_t bits = kgz_bitstream_peek(stream, MAX_BITS);
     huffman_cache_entry_t entry = tree->table[bits & ((1 << TABLE_BITS) - 1)];
 

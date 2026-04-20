@@ -3,17 +3,24 @@
 #include "kgz_priv.h"
 
 static inline void kgz_bitstream_fill(kgz_bitstream_t* stream) {
-    while(stream->bits_in_buffer <= 56) {
-        uint64_t byte_idx = stream->current_byte + (stream->current_bit + stream->bits_in_buffer) / 8;
-        if(byte_idx >= stream->data_len) break;
-        stream->bit_buffer |= ((uint64_t) stream->data[byte_idx] << stream->bits_in_buffer);
-        stream->bits_in_buffer += 8;
+    uint8_t bits = stream->bits_in_buffer;
+    uint64_t cur_byte = stream->current_byte + ((stream->current_bit + bits) >> 3);
+    const uint8_t* data = stream->data;
+    uint64_t data_len = stream->data_len;
+    uint64_t bit_buffer = stream->bit_buffer;
+
+    while(bits <= 56 && cur_byte < data_len) {
+        bit_buffer |= ((uint64_t) data[cur_byte++] << bits);
+        bits += 8;
     }
+
+    stream->bits_in_buffer = bits;
+    stream->bit_buffer = bit_buffer;
 }
 
 uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
-    if(bits == 0) return 0;
-    if(stream->bits_in_buffer < bits) kgz_bitstream_fill(stream);
+    if(KGZ_UNLIKELY(bits == 0)) return 0;
+    if(KGZ_UNLIKELY(stream->bits_in_buffer < bits)) kgz_bitstream_fill(stream);
     uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
     uint32_t result = (uint32_t) (stream->bit_buffer & mask);
     stream->bit_buffer >>= bits;
@@ -25,7 +32,7 @@ uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
 }
 
 void kgz_bitstream_align(kgz_bitstream_t* stream) {
-    if(stream->current_bit != 0) {
+    if(KGZ_LIKELY(stream->current_bit != 0)) {
         stream->current_byte++;
         stream->current_bit = 0;
     }
@@ -38,7 +45,7 @@ uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
 }
 
 uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
-    if(stream->current_bit == 0 && stream->current_byte + 1 < stream->data_len) {
+    if(KGZ_LIKELY(stream->current_bit == 0 && stream->current_byte + 1 < stream->data_len)) {
         uint16_t word = (uint16_t) stream->data[stream->current_byte] | ((uint16_t) stream->data[stream->current_byte + 1] << 8);
         stream->current_byte += 2;
         return word;
@@ -47,14 +54,14 @@ uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
 }
 
 uint32_t kgz_bitstream_peek(kgz_bitstream_t* stream, uint32_t bits) {
-    if(bits == 0) return 0;
-    if(stream->bits_in_buffer < bits) kgz_bitstream_fill(stream);
+    if(KGZ_UNLIKELY(bits == 0)) return 0;
+    if(KGZ_UNLIKELY(stream->bits_in_buffer < bits)) kgz_bitstream_fill(stream);
     uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
     return (uint32_t) (stream->bit_buffer & mask);
 }
 
 void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
-    if(bits == 0) return;
+    if(KGZ_UNLIKELY(bits == 0)) return;
     stream->bit_buffer >>= bits;
     stream->bits_in_buffer -= bits;
     stream->current_bit += bits;

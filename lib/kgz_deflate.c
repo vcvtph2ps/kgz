@@ -31,10 +31,10 @@ bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
     }
 
     uint64_t avail = context->bitstream->data_len - context->bitstream->current_byte;
-    if((uint64_t) len > avail) len = (uint16_t) avail;
+    if(KGZ_UNLIKELY((uint64_t) len > avail)) len = (uint16_t) avail;
 
     const uint8_t* src = context->bitstream->data + context->bitstream->current_byte;
-    if(!kgz_buffer_insert_bulk(&context->output_buffer, src, len)) return false;
+    if(KGZ_UNLIKELY(!kgz_buffer_insert_bulk(&context->output_buffer, src, len))) return false;
     context->bitstream->current_byte += len;
     return true;
 }
@@ -50,13 +50,13 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huf
     for(int i = 0; i < hclen + 4; i++) { hsym_lengths[g_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
 
     kgz_huffman_tree_t* htree = kgz_huffman_tree_create(hsym_lengths, 19, &context->arena_alloc);
-    if(!htree) return false;
+    if(KGZ_UNLIKELY(!htree)) return false;
 
     uint16_t symbol;
     uint16_t sym_lengths[288 + 32] = { 0 };
     for(int i = 0; i < (hlit + 257) + (hdist + 1);) {
         bool v = kgz_huffman_tree_lookup(htree, context->bitstream, &symbol);
-        if(!v) { return false; }
+        if(KGZ_UNLIKELY(!v)) { return false; }
 
         if(symbol <= 15) {
             sym_lengths[i] = symbol;
@@ -76,10 +76,13 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huf
         }
     }
 
-    *dtree = kgz_huffman_tree_create(&sym_lengths[hlit + 257], hdist + 1, &context->arena_alloc);
-    if(!*dtree) return false;
-    *ltree = kgz_huffman_tree_create(sym_lengths, hlit + 257, &context->arena_alloc);
-    if(!*ltree) return false;
+    kgz_huffman_tree_t* dtree_tmp = kgz_huffman_tree_create(&sym_lengths[hlit + 257], hdist + 1, &context->arena_alloc);
+    kgz_huffman_tree_t* ltree_tmp = kgz_huffman_tree_create(sym_lengths, hlit + 257, &context->arena_alloc);
+    if(KGZ_UNLIKELY(!dtree_tmp)) return false;
+    if(KGZ_UNLIKELY(!ltree_tmp)) return false;
+
+    *dtree = dtree_tmp;
+    *ltree = ltree_tmp;
     return true;
 }
 
@@ -90,7 +93,7 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
     kgz_huffman_tree_t* ltree;
 
     if(dynamic) {
-        if(!create_dynamic_huffman_tables(context, &ltree, &dtree)) return false;
+        if(KGZ_UNLIKELY(!create_dynamic_huffman_tables(context, &ltree, &dtree))) return false;
     } else {
         ltree = context->fixed_huffman_tree;
     }
@@ -99,12 +102,12 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
         if(context->bitstream->current_byte >= context->bitstream->data_len) break;
 
         bool v = kgz_huffman_tree_lookup(ltree, context->bitstream, &symbol);
-        if(!v) break;
-        if(symbol < 256) {
+        if(KGZ_UNLIKELY(!v)) break;
+        if(KGZ_LIKELY(symbol < 256)) {
             if(!kgz_buffer_insert(&context->output_buffer, (uint8_t) symbol)) return false;
             continue;
         }
-        if(symbol == 256) break;
+        if(KGZ_UNLIKELY(symbol == 256)) break;
 
         uint8_t extra_length_bits = g_length_extra_bits[symbol - 257];
         uint16_t length = g_base_length[symbol - 257] + kgz_bitstream_getbits(context->bitstream, extra_length_bits);
@@ -126,7 +129,7 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
 
         uint16_t extra_dist = kgz_bitstream_getbits(context->bitstream, g_dist_extra_bits[distance_symbol]);
         uint16_t distance = g_base_dist[distance_symbol] + extra_dist;
-        if(!kgz_buffer_lz77copy(&context->output_buffer, distance, length)) return false;
+        if(KGZ_UNLIKELY(!kgz_buffer_lz77copy(&context->output_buffer, distance, length))) return false;
     }
 
     return true;
@@ -135,8 +138,8 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
 bool kgz_deflate_decompress(kgz_decompression_context_t* context) {
     bool last_block = false;
     bool success = true;
-    while(!last_block) {
-        if(kgz_bitstream_getbits(context->bitstream, 1) == true) last_block = true;
+    while(KGZ_UNLIKELY(!last_block)) {
+        if(KGZ_UNLIKELY(kgz_bitstream_getbits(context->bitstream, 1) == true)) last_block = true;
 
         uint8_t block_type = kgz_bitstream_getbits(context->bitstream, 2);
 
@@ -148,7 +151,7 @@ bool kgz_deflate_decompress(kgz_decompression_context_t* context) {
         }
 
         kgz_arena_reset(&context->arena_alloc);
-        if(!success) { break; }
+        if(KGZ_UNLIKELY(!success)) { break; }
     }
 
     return success;

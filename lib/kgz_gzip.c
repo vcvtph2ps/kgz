@@ -119,7 +119,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     kgz_arena_free(&context.arena_alloc);
     kgz_arena_free(&fixed_huffman_arena);
 
-    if(!success) {
+    if(KGZ_UNLIKELY(!success)) {
         KGZ_FREE(context.output_buffer.data);
         return nullptr;
     }

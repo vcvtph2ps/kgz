@@ -1,7 +1,7 @@
 #include "kgz_priv.h"
 
 bool kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte) {
-    if(buffer->size >= buffer->capacity) {
+    if(KGZ_UNLIKELY(buffer->size >= buffer->capacity)) {
         KGZ_PRINTF("output buffer overflow: size %zu capacity %zu\n", buffer->size, buffer->capacity);
         return false;
     }
@@ -10,7 +10,7 @@ bool kgz_buffer_insert(kgz_buffer_t* buffer, uint8_t byte) {
 }
 
 bool kgz_buffer_insert_bulk(kgz_buffer_t* buffer, const uint8_t* src, size_t len) {
-    if(buffer->size + len > buffer->capacity) {
+    if(KGZ_UNLIKELY(buffer->size + len > buffer->capacity)) {
         KGZ_PRINTF("output buffer overflow: need %zu have %zu\n", len, buffer->capacity - buffer->size);
         return false;
     }
@@ -20,8 +20,8 @@ bool kgz_buffer_insert_bulk(kgz_buffer_t* buffer, const uint8_t* src, size_t len
 }
 
 bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
-    if(distance > buffer->size) return false;
-    if(buffer->size + length > buffer->capacity) {
+    if(KGZ_UNLIKELY(distance > buffer->size)) return false;
+    if(KGZ_UNLIKELY(buffer->size + length > buffer->capacity)) {
         KGZ_PRINTF("output buffer overflow during backcopy\n");
         return false;
     }
