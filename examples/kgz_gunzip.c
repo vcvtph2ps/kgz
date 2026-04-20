@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     uint64_t buffer_size; // size of allocated buffer (may be larger than result_size)
     void* decompressed_data = kgz_gzip_decompress(file, filesize, &result_size, &buffer_size);
 
-    if(decompressed_data == nullptr) {
+    if(decompressed_data == NULL) {
         printf("failed to decompress\n");
         munmap(file, filesize);
         close(fd);

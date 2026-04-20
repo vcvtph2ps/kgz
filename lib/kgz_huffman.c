@@ -37,7 +37,7 @@ struct kgz_huffman_tree {
 #define MAX_BITS 15
 
 static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) {
-    if(KGZ_UNLIKELY(index < 0 || index >= tree->nodes_count)) return nullptr;
+    if(KGZ_UNLIKELY(index < 0 || index >= tree->nodes_count)) return NULL;
     return &tree->nodes[index];
 }
 
@@ -100,17 +100,17 @@ uint32_t bit_reverse(uint32_t code, uint32_t bits) {
 
 kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
     kgz_huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
-    tree->nodes = nullptr;
+    tree->nodes = NULL;
     tree->nodes_capacity = 0;
     tree->nodes_count = 0;
-    if(!tree) return nullptr;
+    if(!tree) return NULL;
 
     tree->root_index = alloc_new_node(tree, arena);
-    if(tree->root_index == -1) return nullptr;
+    if(tree->root_index == -1) return NULL;
 
     size_t bl_count[MAX_BITS + 1] = { 0 };
     for(size_t i = 0; i < symbol_count; i++) {
-        if(symbol_lengths[i] > MAX_BITS) { return nullptr; }
+        if(symbol_lengths[i] > MAX_BITS) { return NULL; }
         if(symbol_lengths[i] == 0) { continue; }
         bl_count[symbol_lengths[i]]++;
     }
@@ -132,7 +132,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
         if(symbol_length == 0) { continue; }
 
         uint32_t code = next_code[symbol_length];
-        if(!insert_code(tree, next_code[symbol_length], symbol_length, sym, arena)) return nullptr;
+        if(!insert_code(tree, next_code[symbol_length], symbol_length, sym, arena)) return NULL;
         next_code[symbol_length]++;
 
         if(symbol_length > TABLE_BITS) continue;
@@ -150,7 +150,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
 
 bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol, uint32_t bits) {
     huffman_node_t* current_node = get_node(tree, tree->root_index);
-    if(current_node == nullptr) return false;
+    if(current_node == NULL) return false;
 
     int current_length = 0;
     while(1) {

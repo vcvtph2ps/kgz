@@ -24,8 +24,8 @@ void kgz_arena_reset(kgz_arena_t* arena) {
 }
 
 void* kgz_arena_allocate(kgz_arena_t* arena, size_t size, size_t alignment) {
-    if(KGZ_UNLIKELY(!arena || !arena->buffer)) return nullptr;
-    if(KGZ_UNLIKELY(alignment == 0 || (alignment & (alignment - 1)) != 0)) return nullptr;
+    if(KGZ_UNLIKELY(!arena || !arena->buffer)) return NULL;
+    if(KGZ_UNLIKELY(alignment == 0 || (alignment & (alignment - 1)) != 0)) return NULL;
 
     uintptr_t base = (uintptr_t) arena->buffer;
     uintptr_t current = base + arena->offset;
@@ -33,7 +33,7 @@ void* kgz_arena_allocate(kgz_arena_t* arena, size_t size, size_t alignment) {
     uintptr_t aligned = (current + alignment - 1) & ~(alignment - 1);
     size_t new_offset = (size_t) ((aligned - base) + size);
 
-    if(KGZ_UNLIKELY(new_offset > arena->capacity)) { return nullptr; }
+    if(KGZ_UNLIKELY(new_offset > arena->capacity)) { return NULL; }
 
     void* ptr = (void*) aligned;
 
@@ -45,7 +45,7 @@ void kgz_arena_free(kgz_arena_t* arena) {
     if(KGZ_UNLIKELY(!arena)) return;
 
     KGZ_FREE(arena->buffer);
-    arena->buffer = nullptr;
+    arena->buffer = NULL;
     arena->capacity = 0;
     arena->offset = 0;
 }

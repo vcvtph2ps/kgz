@@ -1,6 +1,7 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /* custom user options */
 
@@ -18,12 +19,13 @@ _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15"
 #include <string.h>
 
 #define KGZ_MALLOC(size) malloc((size))
-#define KGZ_CALLOC(n, size) calloc((n), (size))
 #define KGZ_FREE(ptr) free((ptr))
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 #define KGZ_PRINTF(...) printf(__VA_ARGS__)
 #endif
+
+/* optional portability stuff */
 
 #ifndef KGZ_EXPECT
 #define KGZ_EXPECT(...) __builtin_expect(__VA_ARGS__)
@@ -40,7 +42,6 @@ _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15"
 #ifndef KGZ_UNREACHABLE
 #define KGZ_UNREACHABLE(x) __builtin_unreachable()
 #endif
-
 
 /* kgz_arena.c */
 typedef struct kgz_arena {

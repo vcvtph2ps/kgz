@@ -2,23 +2,23 @@
 
 #include "kgz_priv.h"
 
-static const uint16_t g_base_length[29] = {
+static const uint16_t kgz_base_length[29] = {
     3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258,
 };
 
-static const uint8_t g_length_extra_bits[29] = {
+static const uint8_t kgz_length_extra_bits[29] = {
     0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0,
 };
 
-static const uint16_t g_base_dist[30] = {
+static const uint16_t kgz_base_dist[30] = {
     1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577,
 };
 
-static const uint8_t g_dist_extra_bits[30] = {
+static const uint8_t kgz_dist_extra_bits[30] = {
     0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13,
 };
 
-static const uint8_t g_clen_alpha_order[19] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
+static const uint8_t kgz_clen_alpha_order[19] = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
 bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
     kgz_bitstream_align(context->bitstream);
@@ -47,7 +47,7 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huf
     uint8_t hclen = (data >> 10) & 0xf;
     uint16_t hsym_lengths[19] = { 0 };
 
-    for(int i = 0; i < hclen + 4; i++) { hsym_lengths[g_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
+    for(int i = 0; i < hclen + 4; i++) { hsym_lengths[kgz_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
 
     kgz_huffman_tree_t* htree = kgz_huffman_tree_create(hsym_lengths, 19, &context->arena_alloc);
     if(KGZ_UNLIKELY(!htree)) return false;
@@ -109,8 +109,8 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
         }
         if(KGZ_UNLIKELY(symbol == 256)) break;
 
-        uint8_t extra_length_bits = g_length_extra_bits[symbol - 257];
-        uint16_t length = g_base_length[symbol - 257] + kgz_bitstream_getbits(context->bitstream, extra_length_bits);
+        uint8_t extra_length_bits = kgz_length_extra_bits[symbol - 257];
+        uint16_t length = kgz_base_length[symbol - 257] + kgz_bitstream_getbits(context->bitstream, extra_length_bits);
 
         uint16_t distance_symbol;
         if(dynamic) {
@@ -127,8 +127,8 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
             }
         }
 
-        uint16_t extra_dist = kgz_bitstream_getbits(context->bitstream, g_dist_extra_bits[distance_symbol]);
-        uint16_t distance = g_base_dist[distance_symbol] + extra_dist;
+        uint16_t extra_dist = kgz_bitstream_getbits(context->bitstream, kgz_dist_extra_bits[distance_symbol]);
+        uint16_t distance = kgz_base_dist[distance_symbol] + extra_dist;
         if(KGZ_UNLIKELY(!kgz_buffer_lz77copy(&context->output_buffer, distance, length))) return false;
     }
 

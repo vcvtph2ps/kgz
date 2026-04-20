@@ -5,6 +5,7 @@ my @skip = (
     qr/^#include\s+"kgz_priv\.h"\s*$/,   # remove { #include "kgz_priv.h" }
     qr/^\s*#include\s*<stdint\.h>\s*$/,  # remove { #include <stdint.h> }
     qr/^\s*#include\s*<stddef\.h>\s*$/,  # remove { #include <stddef.h> }
+    qr/^\s*#include\s*<stdbool\.h>\s*$/, # remove { #include <stdbool.h> }
     qr/^\s*#pragma\s+once\s*$/,          # remove { #pragma once }
     qr/^\s*\/\//,                        # remove single line comments { // }
     qr/\/\*.*\*\//,                      # remove single line comments { /* */ }
@@ -42,6 +43,7 @@ my @steps = (
     step { my ($out) = @_; emit_string($out, "#pragma once") },
     step { my ($out) = @_; emit_string($out, "#include <stdint.h>") },
     step { my ($out) = @_; emit_string($out, "#include <stddef.h>") },
+    step { my ($out) = @_; emit_string($out, "#include <stdbool.h>") },
     step { my ($out) = @_; emit_string($out, "#define KGZ_SINGLE_HEADER") },
     # include the public user api
     step { my ($out) = @_; emit_file($out,   "./lib/kgz_pub.h") },

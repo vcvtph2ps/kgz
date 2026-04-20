@@ -4,7 +4,7 @@
 
 #define CHECK_BOUNDS(curr, size, needed)               \
     do {                                               \
-        if((curr) + (needed) > (size)) return nullptr; \
+        if((curr) + (needed) > (size)) return NULL; \
     } while(0)
 
 #define FTEXT (1 << 0)
@@ -19,12 +19,12 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
 
     // magic
     CHECK_BOUNDS(current_byte, data_size, 2);
-    if(u8data[current_byte] != 0x1F || u8data[current_byte + 1] != 0x8B) return nullptr;
+    if(u8data[current_byte] != 0x1F || u8data[current_byte + 1] != 0x8B) return NULL;
     current_byte += 2;
 
     // compression method
     CHECK_BOUNDS(current_byte, data_size, 1);
-    if(u8data[current_byte] != 8) return nullptr;
+    if(u8data[current_byte] != 8) return NULL;
     current_byte += 1;
 
     // flags
@@ -111,7 +111,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
         kgz_arena_free(&context.arena_alloc);
         kgz_arena_free(&fixed_huffman_arena);
         KGZ_FREE(context.output_buffer.data);
-        return nullptr;
+        return NULL;
     }
 
     bool success = kgz_deflate_decompress(&context);
@@ -121,7 +121,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
 
     if(KGZ_UNLIKELY(!success)) {
         KGZ_FREE(context.output_buffer.data);
-        return nullptr;
+        return NULL;
     }
 
     if(data_size_out) *data_size_out = decompressed_size;
