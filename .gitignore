@@ -2,6 +2,7 @@
 /obj_cpp
 
 kgz_gunzip
+kgz_gunzip_cpp
 
 .cache
 .thinlto-cache

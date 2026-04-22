@@ -2,8 +2,8 @@
 
 #include "kgz_priv.h"
 
-#define CHECK_BOUNDS(curr, size, needed)               \
-    do {                                               \
+#define CHECK_BOUNDS(curr, size, needed)            \
+    do {                                            \
         if((curr) + (needed) > (size)) return NULL; \
     } while(0)
 
@@ -14,7 +14,7 @@
 #define FCOMMENT (1 << 4)
 
 void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out) {
-    uint8_t* u8data = (uint8_t*) data;
+    uint8_t* u8data = data;
     uint64_t current_byte = 0;
 
     // magic
@@ -39,7 +39,9 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     // skip extra
     if(flag & FEXTRA) {
         CHECK_BOUNDS(current_byte, data_size, 2);
-        uint16_t xlen = (uint16_t) u8data[current_byte] | ((uint16_t) u8data[current_byte + 1] << 8);
+        uint16_t xlen = 0;
+        xlen |= u8data[current_byte];
+        xlen |= ((uint16_t) u8data[current_byte + 1] << 8);
         current_byte += 2;
         CHECK_BOUNDS(current_byte, data_size, xlen);
         current_byte += xlen;
@@ -80,10 +82,10 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
 
     uint64_t footer_offset = data_size - 8;
     uint32_t decompressed_size = 0;
-    decompressed_size |= (uint32_t) u8data[footer_offset + 4];
-    decompressed_size |= (uint32_t) u8data[footer_offset + 5] << 8;
-    decompressed_size |= (uint32_t) u8data[footer_offset + 6] << 16;
-    decompressed_size |= (uint32_t) u8data[footer_offset + 7] << 24;
+    decompressed_size |= u8data[footer_offset + 4];
+    decompressed_size |= ((uint32_t) u8data[footer_offset + 5] << 8);
+    decompressed_size |= ((uint32_t) u8data[footer_offset + 6] << 16);
+    decompressed_size |= ((uint32_t) u8data[footer_offset + 7] << 24);
 
     kgz_decompression_context_t context;
     context.bitstream = &deflate_bitstream;

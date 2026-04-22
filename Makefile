@@ -2,7 +2,7 @@ CC            := clang
 LDFLAGS       := -flto
 MAIN_SRC      := ./examples/kgz_gunzip.c ./lib/kgz_gzip.c ./lib/kgz_deflate.c ./lib/kgz_huffman.c ./lib/kgz_bitstream.c ./lib/kgz_buffer.c ./lib/kgz_arena.c
 CPP_SRC       := ./examples/kgz_gunzip_cpp.cpp ./lib/kgz_gzip.c ./lib/kgz_deflate.c ./lib/kgz_huffman.c ./lib/kgz_bitstream.c ./lib/kgz_buffer.c ./lib/kgz_arena.c
-COMMON_CFLAGS := -Wall -Wextra -g -O2 -flto -I./lib
+COMMON_CFLAGS := -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Wvla -Werror -g -O2 -flto -I./lib
 
 MAIN_TARGET    := kgz_gunzip
 MAIN_BUILD_DIR := obj

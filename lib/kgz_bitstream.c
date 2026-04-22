@@ -50,7 +50,9 @@ uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
         const uint8_t* p = stream->data + stream->current_byte;
         uint16_t lo = *p++;
         uint16_t hi = *p++;
-        uint16_t word = lo | (hi << 8);
+        uint16_t word = 0;
+        word |= lo;
+        word |= (hi << 8);
         stream->current_byte += 2;
         return word;
     }

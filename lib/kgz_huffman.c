@@ -44,10 +44,10 @@ static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) 
 static inline int32_t alloc_new_node(kgz_huffman_tree_t* tree, kgz_arena_t* arena) {
     if(KGZ_UNLIKELY(tree->nodes_count >= tree->nodes_capacity)) {
         int32_t new_capacity = tree->nodes_capacity == 0 ? 16 : tree->nodes_capacity * 2;
-        huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * new_capacity, 8);
+        huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) new_capacity, 8);
         if(KGZ_UNLIKELY(!new_nodes)) return -1;
 
-        if(tree->nodes) { memcpy(new_nodes, tree->nodes, sizeof(huffman_node_t) * tree->nodes_count); }
+        if(tree->nodes) { memcpy(new_nodes, tree->nodes, sizeof(huffman_node_t) * (size_t) tree->nodes_count); }
         tree->nodes = new_nodes;
         tree->nodes_capacity = new_capacity;
     }
@@ -120,14 +120,14 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
         uint32_t code = 0;
         bl_count[0] = 0;
         for(uint32_t bits = 1; bits <= MAX_BITS; bits++) {
-            code = (code + bl_count[bits - 1]) << 1;
-            next_code[bits] = code;
+            code = (code + (uint32_t) bl_count[bits - 1]) << 1;
+            next_code[bits] = (uint16_t) code;
         }
     }
 
     memset(tree->table, 0xff, sizeof(tree->table));
 
-    for(size_t sym = 0; sym < symbol_count; sym++) {
+    for(uint16_t sym = 0; sym < symbol_count; sym++) {
         uint16_t symbol_length = symbol_lengths[sym];
         if(symbol_length == 0) { continue; }
 
@@ -137,11 +137,11 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
 
         if(symbol_length > TABLE_BITS) continue;
 
-        int32_t stride = 1 << symbol_length;
+        uint32_t stride = 1u << symbol_length;
         uint32_t rev_code = bit_reverse(code, symbol_length);
-        for(uint32_t fill = rev_code; fill < (1 << TABLE_BITS); fill += stride) {
+        for(uint32_t fill = rev_code; fill < (1u << TABLE_BITS); fill += stride) {
             tree->table[fill].symbol = sym;
-            tree->table[fill].length = symbol_length;
+            tree->table[fill].length = (int8_t) symbol_length;
         }
     }
 
@@ -152,7 +152,7 @@ bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* str
     huffman_node_t* current_node = get_node(tree, tree->root_index);
     if(current_node == NULL) return false;
 
-    int current_length = 0;
+    uint32_t current_length = 0;
     while(1) {
         if(current_node->type == HUFFMAN_NODE_TYPE_SYMBOL) {
             *symbol = current_node->symbol.symbol;
@@ -185,7 +185,7 @@ bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, 
     huffman_cache_entry_t entry = tree->table[bits & ((1 << TABLE_BITS) - 1)];
 
     if(entry.length > 0) {
-        kgz_bitstream_consume(stream, entry.length);
+        kgz_bitstream_consume(stream, (uint32_t) entry.length);
         *symbol = entry.symbol;
         return true;
     }

@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    size_t filesize = st.st_size;
+    size_t filesize = (size_t) st.st_size;
 
     void* file = mmap(NULL, filesize, PROT_READ, MAP_PRIVATE, fd, 0);
     if(file == MAP_FAILED) {

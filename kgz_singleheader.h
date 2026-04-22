@@ -23,9 +23,9 @@ commercial and non-commercial, without any restrictions, without complying
 with any conditions and by any means.
 */
 #pragma once
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #define KGZ_SINGLE_HEADER
 extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out);
 #ifdef KGZ_IMPLEMENTATION
@@ -121,7 +121,7 @@ uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
     if(KGZ_UNLIKELY(bits == 0)) return 0;
     if(KGZ_UNLIKELY(stream->bits_in_buffer < bits)) kgz_bitstream_fill(stream);
     uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
-    uint32_t result = (uint32_t) (stream->bit_buffer & mask);
+    uint32_t result = stream->bit_buffer & mask;
     stream->bit_buffer >>= bits;
     stream->bits_in_buffer -= bits;
     stream->current_bit += bits;
@@ -138,7 +138,7 @@ void kgz_bitstream_align(kgz_bitstream_t* stream) {
     stream->bits_in_buffer = 0;
 }
 uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
-    return (uint8_t) kgz_bitstream_getbits(stream, 8);
+    return kgz_bitstream_getbits(stream, 8);
 }
 uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
     if(KGZ_LIKELY(stream->current_bit == 0 && stream->current_byte + 1 < stream->data_len)) {
@@ -149,13 +149,13 @@ uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
         stream->current_byte += 2;
         return word;
     }
-    return (uint16_t) kgz_bitstream_getbits(stream, 16);
+    return kgz_bitstream_getbits(stream, 16);
 }
 uint32_t kgz_bitstream_peek(kgz_bitstream_t* stream, uint32_t bits) {
     if(KGZ_UNLIKELY(bits == 0)) return 0;
     if(KGZ_UNLIKELY(stream->bits_in_buffer < bits)) kgz_bitstream_fill(stream);
     uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
-    return (uint32_t) (stream->bit_buffer & mask);
+    return stream->bit_buffer & mask;
 }
 void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
     if(KGZ_UNLIKELY(bits == 0)) return;
@@ -165,8 +165,8 @@ void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
     stream->current_byte += stream->current_bit / 8;
     stream->current_bit &= 7;
 }
-#define CHECK_BOUNDS(curr, size, needed)               \
-    do {                                               \
+#define CHECK_BOUNDS(curr, size, needed)            \
+    do {                                            \
         if((curr) + (needed) > (size)) return NULL; \
     } while(0)
 #define FTEXT (1 << 0)
@@ -175,7 +175,7 @@ void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
 #define FNAME (1 << 3)
 #define FCOMMENT (1 << 4)
 void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out) {
-    uint8_t* u8data = (uint8_t*) data;
+    uint8_t* u8data = data;
     uint64_t current_byte = 0;
     CHECK_BOUNDS(current_byte, data_size, 2);
     if(u8data[current_byte] != 0x1F || u8data[current_byte + 1] != 0x8B) return NULL;
@@ -190,7 +190,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     current_byte += 6;
     if(flag & FEXTRA) {
         CHECK_BOUNDS(current_byte, data_size, 2);
-        uint16_t xlen = (uint16_t) u8data[current_byte] | ((uint16_t) u8data[current_byte + 1] << 8);
+        uint16_t xlen = u8data[current_byte] | ((uint16_t) u8data[current_byte + 1] << 8);
         current_byte += 2;
         CHECK_BOUNDS(current_byte, data_size, xlen);
         current_byte += xlen;
@@ -222,10 +222,10 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     deflate_bitstream.bits_in_buffer = 0;
     uint64_t footer_offset = data_size - 8;
     uint32_t decompressed_size = 0;
-    decompressed_size |= (uint32_t) u8data[footer_offset + 4];
-    decompressed_size |= (uint32_t) u8data[footer_offset + 5] << 8;
-    decompressed_size |= (uint32_t) u8data[footer_offset + 6] << 16;
-    decompressed_size |= (uint32_t) u8data[footer_offset + 7] << 24;
+    decompressed_size |= u8data[footer_offset + 4];
+    decompressed_size |= ((uint32_t) u8data[footer_offset + 5] << 8);
+    decompressed_size |= ((uint32_t) u8data[footer_offset + 6] << 16);
+    decompressed_size |= ((uint32_t) u8data[footer_offset + 7] << 24);
     kgz_decompression_context_t context;
     context.bitstream = &deflate_bitstream;
     context.output_buffer.data = KGZ_MALLOC(decompressed_size + 1024);
