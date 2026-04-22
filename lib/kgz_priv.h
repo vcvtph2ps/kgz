@@ -19,7 +19,7 @@ _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15"
 #include <string.h>
 
 #define KGZ_MALLOC(size) malloc((size))
-#define KGZ_FREE(ptr) free((ptr))
+#define KGZ_FREE(ptr, size) free((ptr))
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 #define KGZ_PRINTF(...) printf(__VA_ARGS__)

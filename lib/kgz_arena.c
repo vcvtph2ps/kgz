@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +45,7 @@ void* kgz_arena_allocate(kgz_arena_t* arena, size_t size, size_t alignment) {
 void kgz_arena_free(kgz_arena_t* arena) {
     if(KGZ_UNLIKELY(!arena)) return;
 
-    KGZ_FREE(arena->buffer);
+    KGZ_FREE(arena->buffer, arena->capacity);
     arena->buffer = NULL;
     arena->capacity = 0;
     arena->offset = 0;

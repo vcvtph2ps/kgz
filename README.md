@@ -35,7 +35,7 @@ free(result);
 This library requires the following standard functions
 
 - malloc()
-- free()
+- free() (may be sized or unsized)
 - memcpy()
 - memset()
 - printf() (may be stubbed)
@@ -52,7 +52,6 @@ before including the main header you need to define `KGZ_USE_OWN_MACROS` and the
 
 #define KGZ_USE_OWN_MACROS
 #define KGZ_MALLOC(size) kmalloc((size))
-// free must not require a size, the library makes very few allocations so you can add a header to your allocator
 #define KGZ_FREE(ptr) kfree((ptr))
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
