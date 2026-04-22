@@ -1,8 +1,11 @@
 CC            := clang
-LDFLAGS       := -flto
+
+SANITIZE := -fsanitize=address,undefined,leak,integer,nullability,float-divide-by-zero,unsigned-integer-overflow,implicit-conversion,local-bounds -fsanitize-address-use-after-scope -fsanitize-undefined-trap-on-error
+
+LDFLAGS       := -flto $(SANITIZE)
 MAIN_SRC      := ./examples/kgz_gunzip.c ./lib/kgz_gzip.c ./lib/kgz_deflate.c ./lib/kgz_huffman.c ./lib/kgz_bitstream.c ./lib/kgz_buffer.c ./lib/kgz_arena.c
 CPP_SRC       := ./examples/kgz_gunzip_cpp.cpp ./lib/kgz_gzip.c ./lib/kgz_deflate.c ./lib/kgz_huffman.c ./lib/kgz_bitstream.c ./lib/kgz_buffer.c ./lib/kgz_arena.c
-COMMON_CFLAGS := -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Wvla -Werror -g -O2 -flto -I./lib
+COMMON_CFLAGS := -Wall -Wextra -Wshadow -Wconversion -Wpedantic -Wvla -Werror -g -O2 -flto -I./lib $(SANITIZE)
 
 MAIN_TARGET    := kgz_gunzip
 MAIN_BUILD_DIR := obj
