@@ -1,4 +1,6 @@
 /obj
+/obj_cpp
+
 kgz_gunzip
 
 .cache
