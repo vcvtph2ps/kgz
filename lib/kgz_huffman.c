@@ -47,7 +47,7 @@ static inline int32_t alloc_new_node(kgz_huffman_tree_t* tree, kgz_arena_t* aren
         huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) new_capacity, 8);
         if(KGZ_UNLIKELY(!new_nodes)) return -1;
 
-        if(tree->nodes) { memcpy(new_nodes, tree->nodes, sizeof(huffman_node_t) * (size_t) tree->nodes_count); }
+        if(tree->nodes) { KGZ_MEMCPY(new_nodes, tree->nodes, sizeof(huffman_node_t) * (size_t) tree->nodes_count); }
         tree->nodes = new_nodes;
         tree->nodes_capacity = new_capacity;
     }
@@ -125,7 +125,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
         }
     }
 
-    memset(tree->table, 0xff, sizeof(tree->table));
+    KGZ_MEMSET(tree->table, 0xff, sizeof(tree->table));
 
     for(uint16_t sym = 0; sym < symbol_count; sym++) {
         uint16_t symbol_length = symbol_lengths[sym];

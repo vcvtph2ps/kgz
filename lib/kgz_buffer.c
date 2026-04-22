@@ -29,7 +29,7 @@ bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
     uint8_t* dest = buffer->data + buffer->size;
     const uint8_t* src = dest - distance;
     if(distance == 1) {
-        memset(dest, src[0], length);
+        KGZ_MEMSET(dest, src[0], length);
     } else if(distance >= length) {
         KGZ_MEMCPY(dest, src, length);
     } else {
