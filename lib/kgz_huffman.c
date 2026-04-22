@@ -100,10 +100,28 @@ uint32_t bit_reverse(uint32_t code, uint32_t bits) {
 
 kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
     kgz_huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
+    if(!tree) return NULL;
+
     tree->nodes = NULL;
     tree->nodes_capacity = 0;
     tree->nodes_count = 0;
-    if(!tree) return NULL;
+
+    int32_t leaf_count = 0;
+    for(uint16_t i = 0; i < symbol_count; i++) {
+        if(symbol_lengths[i] != 0) leaf_count++;
+    }
+
+    int32_t initial_capacity = 16;
+    if(leaf_count > 0) {
+        // @note: this allocates the amount of nodes needed for the worst case. not ideal for memory usage, but memcpying the whole tree is less ideal
+        int64_t need = (int64_t) leaf_count * 2 - 1;
+        if(need > initial_capacity) initial_capacity = (int32_t) need;
+    }
+
+    tree->nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) initial_capacity, 8);
+    if(KGZ_UNLIKELY(!tree->nodes)) return NULL;
+    tree->nodes_capacity = initial_capacity;
+    tree->nodes_count = 0;
 
     tree->root_index = alloc_new_node(tree, arena);
     if(tree->root_index == -1) return NULL;
