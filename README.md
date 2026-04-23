@@ -52,7 +52,7 @@ before including the main header you need to define `KGZ_USE_OWN_MACROS` and the
 
 #define KGZ_USE_OWN_MACROS
 #define KGZ_MALLOC(size) kmalloc((size))
-#define KGZ_FREE(ptr) kfree((ptr))
+#define KGZ_FREE(ptr, size) kfree((ptr))
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 // this may become a NOP
