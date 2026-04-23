@@ -23,11 +23,17 @@ commercial and non-commercial, without any restrictions, without complying
 with any conditions and by any means.
 */
 #pragma once
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 #define KGZ_SINGLE_HEADER
+#ifdef __cplusplus
+extern "C" {
+#endif
 extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out);
+#ifdef __cplusplus
+}
+#endif
 #ifdef KGZ_IMPLEMENTATION
 #ifndef KGZ_HUFFMAN_CACHE
 #define KGZ_HUFFMAN_CACHE 10
@@ -39,7 +45,7 @@ _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15"
 #include <stdlib.h>
 #include <string.h>
 #define KGZ_MALLOC(size) malloc((size))
-#define KGZ_FREE(ptr) free((ptr))
+#define KGZ_FREE(ptr, size) free((ptr))
 #define KGZ_MEMCPY(dst, src, n) memcpy((dst), (src), (n))
 #define KGZ_MEMSET(ptr, val, size) memset((ptr), (val), (size))
 #define KGZ_PRINTF(...) printf(__VA_ARGS__)
@@ -121,7 +127,7 @@ uint32_t kgz_bitstream_getbits(kgz_bitstream_t* stream, uint32_t bits) {
     if(KGZ_UNLIKELY(bits == 0)) return 0;
     if(KGZ_UNLIKELY(stream->bits_in_buffer < bits)) kgz_bitstream_fill(stream);
     uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
-    uint32_t result = stream->bit_buffer & mask;
+    uint32_t result = (uint32_t) (stream->bit_buffer & mask);
     stream->bit_buffer >>= bits;
     stream->bits_in_buffer -= bits;
     stream->current_bit += bits;
@@ -138,24 +144,26 @@ void kgz_bitstream_align(kgz_bitstream_t* stream) {
     stream->bits_in_buffer = 0;
 }
 uint8_t kgz_bitstream_read_u8(kgz_bitstream_t* stream) {
-    return kgz_bitstream_getbits(stream, 8);
+    return (uint8_t) kgz_bitstream_getbits(stream, 8);
 }
 uint16_t kgz_bitstream_read_u16(kgz_bitstream_t* stream) {
     if(KGZ_LIKELY(stream->current_bit == 0 && stream->current_byte + 1 < stream->data_len)) {
         const uint8_t* p = stream->data + stream->current_byte;
         uint16_t lo = *p++;
         uint16_t hi = *p++;
-        uint16_t word = lo | (hi << 8);
+        uint16_t word = 0;
+        word |= lo;
+        word |= (hi << 8);
         stream->current_byte += 2;
         return word;
     }
-    return kgz_bitstream_getbits(stream, 16);
+    return (uint16_t) kgz_bitstream_getbits(stream, 16);
 }
 uint32_t kgz_bitstream_peek(kgz_bitstream_t* stream, uint32_t bits) {
     if(KGZ_UNLIKELY(bits == 0)) return 0;
     if(KGZ_UNLIKELY(stream->bits_in_buffer < bits)) kgz_bitstream_fill(stream);
     uint64_t mask = (bits == 64) ? ~0ULL : ((1ULL << bits) - 1);
-    return stream->bit_buffer & mask;
+    return (uint32_t) (stream->bit_buffer & mask);
 }
 void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
     if(KGZ_UNLIKELY(bits == 0)) return;
@@ -190,7 +198,9 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     current_byte += 6;
     if(flag & FEXTRA) {
         CHECK_BOUNDS(current_byte, data_size, 2);
-        uint16_t xlen = u8data[current_byte] | ((uint16_t) u8data[current_byte + 1] << 8);
+        uint16_t xlen = 0;
+        xlen |= u8data[current_byte];
+        xlen |= ((uint16_t) u8data[current_byte + 1] << 8);
         current_byte += 2;
         CHECK_BOUNDS(current_byte, data_size, xlen);
         current_byte += xlen;
@@ -249,14 +259,14 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     if(!context.fixed_huffman_tree) {
         kgz_arena_free(&context.arena_alloc);
         kgz_arena_free(&fixed_huffman_arena);
-        KGZ_FREE(context.output_buffer.data);
+        KGZ_FREE(context.output_buffer.data, context.output_buffer.capacity);
         return NULL;
     }
     bool success = kgz_deflate_decompress(&context);
     kgz_arena_free(&context.arena_alloc);
     kgz_arena_free(&fixed_huffman_arena);
     if(KGZ_UNLIKELY(!success)) {
-        KGZ_FREE(context.output_buffer.data);
+        KGZ_FREE(context.output_buffer.data, context.output_buffer.capacity);
         return NULL;
     }
     if(data_size_out) *data_size_out = decompressed_size;
@@ -298,7 +308,7 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huf
     uint8_t hdist = (data >> 5) & 0x1f;
     uint8_t hclen = (data >> 10) & 0xf;
     uint16_t hsym_lengths[19] = { 0 };
-    for(int i = 0; i < hclen + 4; i++) { hsym_lengths[kgz_clen_alpha_order[i]] = kgz_bitstream_getbits(context->bitstream, 3); }
+    for(int i = 0; i < hclen + 4; i++) { hsym_lengths[kgz_clen_alpha_order[i]] = (uint16_t) kgz_bitstream_getbits(context->bitstream, 3); }
     kgz_huffman_tree_t* htree = kgz_huffman_tree_create(hsym_lengths, 19, &context->arena_alloc);
     if(KGZ_UNLIKELY(!htree)) return false;
     uint16_t symbol;
@@ -311,15 +321,15 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huf
             i++;
             continue;
         } else if(symbol == 16) {
-            uint8_t times = kgz_bitstream_getbits(context->bitstream, 2) + 3;
+            uint8_t times = (uint8_t) kgz_bitstream_getbits(context->bitstream, 2) + 3;
             if(i <= 0) { return false; }
             uint16_t value = sym_lengths[i - 1];
             for(int j = 0; j < times; j++, i++) { sym_lengths[i] = value; }
         } else if(symbol == 17) {
-            uint8_t times = kgz_bitstream_getbits(context->bitstream, 3) + 3;
+            uint8_t times = (uint8_t) kgz_bitstream_getbits(context->bitstream, 3) + 3;
             for(int j = 0; j < times && i < (hlit + 257) + (hdist + 1); j++, i++) { sym_lengths[i] = 0; }
         } else if(symbol == 18) {
-            uint8_t times = kgz_bitstream_getbits(context->bitstream, 7) + 11;
+            uint8_t times = (uint8_t) kgz_bitstream_getbits(context->bitstream, 7) + 11;
             for(int j = 0; j < times && i < (hlit + 257) + (hdist + 1); j++, i++) { sym_lengths[i] = 0; }
         }
     }
@@ -350,22 +360,22 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
         }
         if(KGZ_UNLIKELY(symbol == 256)) break;
         uint8_t extra_length_bits = kgz_length_extra_bits[symbol - 257];
-        uint16_t length = kgz_base_length[symbol - 257] + kgz_bitstream_getbits(context->bitstream, extra_length_bits);
+        uint16_t length = kgz_base_length[symbol - 257] + (uint16_t) kgz_bitstream_getbits(context->bitstream, extra_length_bits);
         uint16_t distance_symbol;
         if(dynamic) {
             if(!kgz_huffman_tree_lookup(dtree, context->bitstream, &distance_symbol)) return false;
         } else {
-            distance_symbol = kgz_bitstream_getbits(context->bitstream, 5);
+            distance_symbol = (uint16_t) kgz_bitstream_getbits(context->bitstream, 5);
             {
                 uint16_t rev = 0;
                 for(size_t i = 0; i < 5; i++) {
-                    rev = (rev << 1) | (distance_symbol & 1);
+                    rev = (uint16_t) ((rev << 1) | (distance_symbol & 1));
                     distance_symbol >>= 1;
                 }
                 distance_symbol = rev;
             }
         }
-        uint16_t extra_dist = kgz_bitstream_getbits(context->bitstream, kgz_dist_extra_bits[distance_symbol]);
+        uint16_t extra_dist = (uint16_t) kgz_bitstream_getbits(context->bitstream, kgz_dist_extra_bits[distance_symbol]);
         uint16_t distance = kgz_base_dist[distance_symbol] + extra_dist;
         if(KGZ_UNLIKELY(!kgz_buffer_lz77copy(&context->output_buffer, distance, length))) return false;
     }
@@ -376,7 +386,7 @@ bool kgz_deflate_decompress(kgz_decompression_context_t* context) {
     bool success = true;
     while(KGZ_UNLIKELY(!last_block)) {
         if(KGZ_UNLIKELY(kgz_bitstream_getbits(context->bitstream, 1) == true)) last_block = true;
-        uint8_t block_type = kgz_bitstream_getbits(context->bitstream, 2);
+        uint8_t block_type = (uint8_t) kgz_bitstream_getbits(context->bitstream, 2);
         switch(block_type) {
             case 0: success = kgz_dflt_handle_stored(context); break;
             case 1: success = kgz_dflt_handle_huffman(context, false); break;
@@ -421,9 +431,9 @@ static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) 
 static inline int32_t alloc_new_node(kgz_huffman_tree_t* tree, kgz_arena_t* arena) {
     if(KGZ_UNLIKELY(tree->nodes_count >= tree->nodes_capacity)) {
         int32_t new_capacity = tree->nodes_capacity == 0 ? 16 : tree->nodes_capacity * 2;
-        huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * new_capacity, 8);
+        huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) new_capacity, 8);
         if(KGZ_UNLIKELY(!new_nodes)) return -1;
-        if(tree->nodes) { memcpy(new_nodes, tree->nodes, sizeof(huffman_node_t) * tree->nodes_count); }
+        if(tree->nodes) { KGZ_MEMCPY(new_nodes, tree->nodes, sizeof(huffman_node_t) * (size_t) tree->nodes_count); }
         tree->nodes = new_nodes;
         tree->nodes_capacity = new_capacity;
     }
@@ -469,10 +479,23 @@ uint32_t bit_reverse(uint32_t code, uint32_t bits) {
 }
 kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
     kgz_huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
+    if(!tree) return NULL;
     tree->nodes = NULL;
     tree->nodes_capacity = 0;
     tree->nodes_count = 0;
-    if(!tree) return NULL;
+    int32_t leaf_count = 0;
+    for(uint16_t i = 0; i < symbol_count; i++) {
+        if(symbol_lengths[i] != 0) leaf_count++;
+    }
+    int32_t initial_capacity = 16;
+    if(leaf_count > 0) {
+        int64_t need = (int64_t) leaf_count * 2 - 1;
+        if(need > initial_capacity) initial_capacity = (int32_t) need;
+    }
+    tree->nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) initial_capacity, 8);
+    if(KGZ_UNLIKELY(!tree->nodes)) return NULL;
+    tree->nodes_capacity = initial_capacity;
+    tree->nodes_count = 0;
     tree->root_index = alloc_new_node(tree, arena);
     if(tree->root_index == -1) return NULL;
     size_t bl_count[MAX_BITS + 1] = { 0 };
@@ -486,23 +509,23 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
         uint32_t code = 0;
         bl_count[0] = 0;
         for(uint32_t bits = 1; bits <= MAX_BITS; bits++) {
-            code = (code + bl_count[bits - 1]) << 1;
-            next_code[bits] = code;
+            code = (code + (uint32_t) bl_count[bits - 1]) << 1;
+            next_code[bits] = (uint16_t) code;
         }
     }
-    memset(tree->table, 0xff, sizeof(tree->table));
-    for(size_t sym = 0; sym < symbol_count; sym++) {
+    KGZ_MEMSET(tree->table, 0xff, sizeof(tree->table));
+    for(uint16_t sym = 0; sym < symbol_count; sym++) {
         uint16_t symbol_length = symbol_lengths[sym];
         if(symbol_length == 0) { continue; }
         uint32_t code = next_code[symbol_length];
         if(!insert_code(tree, next_code[symbol_length], symbol_length, sym, arena)) return NULL;
         next_code[symbol_length]++;
         if(symbol_length > TABLE_BITS) continue;
-        int32_t stride = 1 << symbol_length;
+        uint32_t stride = 1u << symbol_length;
         uint32_t rev_code = bit_reverse(code, symbol_length);
-        for(uint32_t fill = rev_code; fill < (1 << TABLE_BITS); fill += stride) {
+        for(uint32_t fill = rev_code; fill < (1u << TABLE_BITS); fill += stride) {
             tree->table[fill].symbol = sym;
-            tree->table[fill].length = symbol_length;
+            tree->table[fill].length = (int8_t) symbol_length;
         }
     }
     return tree;
@@ -510,7 +533,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
 bool kgz_huffman_tree_lookup_slow(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol, uint32_t bits) {
     huffman_node_t* current_node = get_node(tree, tree->root_index);
     if(current_node == NULL) return false;
-    int current_length = 0;
+    uint32_t current_length = 0;
     while(1) {
         if(current_node->type == HUFFMAN_NODE_TYPE_SYMBOL) {
             *symbol = current_node->symbol.symbol;
@@ -537,7 +560,7 @@ bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, 
     uint32_t bits = kgz_bitstream_peek(stream, MAX_BITS);
     huffman_cache_entry_t entry = tree->table[bits & ((1 << TABLE_BITS) - 1)];
     if(entry.length > 0) {
-        kgz_bitstream_consume(stream, entry.length);
+        kgz_bitstream_consume(stream, (uint32_t) entry.length);
         *symbol = entry.symbol;
         return true;
     }
@@ -569,7 +592,7 @@ bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
     uint8_t* dest = buffer->data + buffer->size;
     const uint8_t* src = dest - distance;
     if(distance == 1) {
-        memset(dest, src[0], length);
+        KGZ_MEMSET(dest, src[0], length);
     } else if(distance >= length) {
         KGZ_MEMCPY(dest, src, length);
     } else {
@@ -578,6 +601,7 @@ bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
     buffer->size += length;
     return true;
 }
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 void kgz_arena_init(kgz_arena_t* arena, size_t capacity) {
@@ -609,7 +633,7 @@ void* kgz_arena_allocate(kgz_arena_t* arena, size_t size, size_t alignment) {
 }
 void kgz_arena_free(kgz_arena_t* arena) {
     if(KGZ_UNLIKELY(!arena)) return;
-    KGZ_FREE(arena->buffer);
+    KGZ_FREE(arena->buffer, arena->capacity);
     arena->buffer = NULL;
     arena->capacity = 0;
     arena->offset = 0;
