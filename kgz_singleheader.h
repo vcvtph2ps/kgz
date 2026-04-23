@@ -183,7 +183,7 @@ void kgz_bitstream_consume(kgz_bitstream_t* stream, uint32_t bits) {
 #define FNAME (1 << 3)
 #define FCOMMENT (1 << 4)
 void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out) {
-    uint8_t* u8data = data;
+    uint8_t* u8data = (uint8_t*)data;
     uint64_t current_byte = 0;
     CHECK_BOUNDS(current_byte, data_size, 2);
     if(u8data[current_byte] != 0x1F || u8data[current_byte + 1] != 0x8B) return NULL;
@@ -223,7 +223,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     }
     CHECK_BOUNDS(current_byte, data_size, 9);
     uint8_t* deflate_data = u8data + current_byte;
-    kgz_bitstream_t deflate_bitstream = { 0 };
+    kgz_bitstream_t deflate_bitstream;
     deflate_bitstream.data = deflate_data;
     deflate_bitstream.data_len = data_size - current_byte - 8;
     deflate_bitstream.current_byte = 0;
@@ -238,7 +238,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     decompressed_size |= ((uint32_t) u8data[footer_offset + 7] << 24);
     kgz_decompression_context_t context;
     context.bitstream = &deflate_bitstream;
-    context.output_buffer.data = KGZ_MALLOC(decompressed_size + 1024);
+    context.output_buffer.data = (uint8_t*)KGZ_MALLOC(decompressed_size + 1024);
     context.output_buffer.size = 0;
     context.output_buffer.capacity = decompressed_size + 1024;
     kgz_arena_init(&context.arena_alloc, (1024 * 32) + ((sizeof(huffman_cache_entry_t) * 3) * (1 << (KGZ_HUFFMAN_CACHE)))); // 32kb base + cache augment
@@ -431,7 +431,7 @@ static inline huffman_node_t* get_node(kgz_huffman_tree_t* tree, int32_t index) 
 static inline int32_t alloc_new_node(kgz_huffman_tree_t* tree, kgz_arena_t* arena) {
     if(KGZ_UNLIKELY(tree->nodes_count >= tree->nodes_capacity)) {
         int32_t new_capacity = tree->nodes_capacity == 0 ? 16 : tree->nodes_capacity * 2;
-        huffman_node_t* new_nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) new_capacity, 8);
+        huffman_node_t* new_nodes = (huffman_node_t*)kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) new_capacity, 8);
         if(KGZ_UNLIKELY(!new_nodes)) return -1;
         if(tree->nodes) { KGZ_MEMCPY(new_nodes, tree->nodes, sizeof(huffman_node_t) * (size_t) tree->nodes_count); }
         tree->nodes = new_nodes;
@@ -478,7 +478,7 @@ uint32_t bit_reverse(uint32_t code, uint32_t bits) {
     return result;
 }
 kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t symbol_count, kgz_arena_t* arena) {
-    kgz_huffman_tree_t* tree = kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
+    kgz_huffman_tree_t* tree = (kgz_huffman_tree_t*)kgz_arena_allocate(arena, sizeof(kgz_huffman_tree_t), 8);
     if(!tree) return NULL;
     tree->nodes = NULL;
     tree->nodes_capacity = 0;
@@ -492,7 +492,7 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
         int64_t need = (int64_t) leaf_count * 2 - 1;
         if(need > initial_capacity) initial_capacity = (int32_t) need;
     }
-    tree->nodes = kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) initial_capacity, 8);
+    tree->nodes = (huffman_node_t*)kgz_arena_allocate(arena, sizeof(huffman_node_t) * (size_t) initial_capacity, 8);
     if(KGZ_UNLIKELY(!tree->nodes)) return NULL;
     tree->nodes_capacity = initial_capacity;
     tree->nodes_count = 0;
@@ -601,9 +601,6 @@ bool kgz_buffer_lz77copy(kgz_buffer_t* buffer, size_t distance, size_t length) {
     buffer->size += length;
     return true;
 }
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
 void kgz_arena_init(kgz_arena_t* arena, size_t capacity) {
     if(KGZ_UNLIKELY(!arena)) return;
     arena->buffer = (uint8_t*) KGZ_MALLOC(capacity);

@@ -1,7 +1,4 @@
-#include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "kgz_priv.h"
 

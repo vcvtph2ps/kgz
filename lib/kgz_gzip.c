@@ -14,7 +14,7 @@
 #define FCOMMENT (1 << 4)
 
 void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out) {
-    uint8_t* u8data = data;
+    uint8_t* u8data = (uint8_t*)data;
     uint64_t current_byte = 0;
 
     // magic
@@ -72,7 +72,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
     // ensure there is some deflate data + footer
     CHECK_BOUNDS(current_byte, data_size, 9);
     uint8_t* deflate_data = u8data + current_byte;
-    kgz_bitstream_t deflate_bitstream = { 0 };
+    kgz_bitstream_t deflate_bitstream;
     deflate_bitstream.data = deflate_data;
     deflate_bitstream.data_len = data_size - current_byte - 8;
     deflate_bitstream.current_byte = 0;
@@ -89,7 +89,7 @@ void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_ou
 
     kgz_decompression_context_t context;
     context.bitstream = &deflate_bitstream;
-    context.output_buffer.data = KGZ_MALLOC(decompressed_size + 1024);
+    context.output_buffer.data = (uint8_t*)KGZ_MALLOC(decompressed_size + 1024);
     context.output_buffer.size = 0;
     context.output_buffer.capacity = decompressed_size + 1024;
     kgz_arena_init(&context.arena_alloc, (1024 * 32) + ((sizeof(huffman_cache_entry_t) * 3) * (1 << (KGZ_HUFFMAN_CACHE)))); // 32kb base + cache augment
