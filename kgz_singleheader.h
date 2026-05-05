@@ -107,7 +107,6 @@ extern void kgz_bitstream_align(kgz_bitstream_t* stream);
 extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_size_out, uint64_t* buffer_size_out);
 extern bool kgz_deflate_decompress(kgz_decompression_context_t* context);
 extern kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* codes, uint16_t codes_len, kgz_arena_t* arena);
-extern void kgz_huffman_tree_debug(kgz_huffman_tree_t* tree);
 extern bool kgz_huffman_tree_lookup(kgz_huffman_tree_t* tree, kgz_bitstream_t* stream, uint16_t* symbol);
 static inline void kgz_bitstream_fill(kgz_bitstream_t* stream) {
     uint8_t bits = stream->bits_in_buffer;

@@ -20,7 +20,7 @@ CPP_OBJ       := $(CPP_SRC:%.cpp=$(CPP_BUILD_DIR)/%.o)
 CPP_OBJ       := $(CPP_OBJ:%.c=$(CPP_BUILD_DIR)/%.o)
 CPP_DEP       := $(CPP_OBJ:.o=.d)
 
-.PHONY: all release clean cpp
+.PHONY: all release clean c++
 
 all: main
 

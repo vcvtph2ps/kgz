@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <kgz_pub.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +59,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    ssize_t written = write(out_fd, decompressed_data, result_size);
+    ssize_t written = write(out_fd, decompressed_data, (size_t)result_size);
     if(written == -1 || (uint64_t) written != result_size) {
         perror("write");
         close(out_fd);
