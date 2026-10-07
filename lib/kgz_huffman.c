@@ -65,20 +65,21 @@ static inline bool insert_code(kgz_huffman_tree_t* tree, uint32_t code, uint16_t
     for(int i = len - 1; i >= 0; i--) {
         uint32_t bit = (code >> i) & 1;
 
+        huffman_node_t* node = get_node(tree, current_index);
         if(bit == 0) {
-            if(get_node(tree, current_index)->internal.zero_index == -1) {
+            if(node->internal.zero_index == -1) {
                 int32_t new_index = alloc_new_node(tree, arena);
                 if(KGZ_UNLIKELY(new_index == -1)) return false;
-                get_node(tree, current_index)->internal.zero_index = new_index;
+                node->internal.zero_index = new_index;
             }
-            current_index = get_node(tree, current_index)->internal.zero_index;
+            current_index = node->internal.zero_index;
         } else {
-            if(get_node(tree, current_index)->internal.one_index == -1) {
+            if(node->internal.one_index == -1) {
                 int32_t new_index = alloc_new_node(tree, arena);
                 if(KGZ_UNLIKELY(new_index == -1)) return false;
-                get_node(tree, current_index)->internal.one_index = new_index;
+                node->internal.one_index = new_index;
             }
-            current_index = get_node(tree, current_index)->internal.one_index;
+            current_index = node->internal.one_index;
         }
     }
 

@@ -109,7 +109,11 @@ bool kgz_dflt_handle_huffman(kgz_decompression_context_t* context, bool dynamic)
         bool v = kgz_huffman_tree_lookup(ltree, context->bitstream, &symbol);
         if(KGZ_UNLIKELY(!v)) break;
         if(KGZ_LIKELY(symbol < 256)) {
-            if(!kgz_buffer_insert(&context->output_buffer, (uint8_t) symbol)) return false;
+            if(KGZ_UNLIKELY(context->output_buffer.size >= context->output_buffer.capacity)) {
+                KGZ_PRINTF("output buffer overflow: size %zu capacity %zu\n", context->output_buffer.size, context->output_buffer.capacity);
+                return false;
+            }
+            context->output_buffer.data[context->output_buffer.size++] = (uint8_t) symbol;
             continue;
         }
         if(KGZ_UNLIKELY(symbol == 256)) break;
