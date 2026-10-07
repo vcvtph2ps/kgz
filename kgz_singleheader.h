@@ -38,8 +38,12 @@ extern void* kgz_gzip_decompress(void* data, uint64_t data_size, uint64_t* data_
 #ifndef KGZ_HUFFMAN_CACHE
 #define KGZ_HUFFMAN_CACHE 10
 #endif
-_Static_assert((KGZ_HUFFMAN_CACHE) >= 3, "KGZ_HUFFMAN_CACHE must be at least 3");
-_Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15");
+#if KGZ_HUFFMAN_CACHE < 3
+#error KGZ_HUFFMAN_CACHE must be at least 3
+#endif
+#if KGZ_HUFFMAN_CACHE > 15
+#error KGZ_HUFFMAN_CACHE must be at most 15
+#endif
 #ifndef KGZ_USE_OWN_MACROS
 #include <stdio.h>
 #include <stdlib.h>
