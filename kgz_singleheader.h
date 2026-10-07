@@ -323,7 +323,7 @@ bool create_dynamic_huffman_tables(kgz_decompression_context_t* context, kgz_huf
             uint8_t times = (uint8_t) kgz_bitstream_getbits(context->bitstream, 2) + 3;
             if(i <= 0) { return false; }
             uint16_t value = sym_lengths[i - 1];
-            for(int j = 0; j < times; j++, i++) { sym_lengths[i] = value; }
+            for(int j = 0; j < times && i < (hlit + 257) + (hdist + 1); j++, i++) { sym_lengths[i] = value; }
         } else if(symbol == 17) {
             uint8_t times = (uint8_t) kgz_bitstream_getbits(context->bitstream, 3) + 3;
             for(int j = 0; j < times && i < (hlit + 257) + (hdist + 1); j++, i++) { sym_lengths[i] = 0; }
