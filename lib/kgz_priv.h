@@ -40,7 +40,7 @@ _Static_assert((KGZ_HUFFMAN_CACHE) <= 15, "KGZ_HUFFMAN_CACHE must be at most 15"
 #endif
 
 #ifndef KGZ_UNREACHABLE
-#define KGZ_UNREACHABLE(x) __builtin_unreachable()
+#define KGZ_UNREACHABLE() __builtin_unreachable()
 #endif
 
 /* kgz_arena.c */
