@@ -20,12 +20,18 @@ CPP_OBJ       := $(CPP_SRC:%.cpp=$(CPP_BUILD_DIR)/%.o)
 CPP_OBJ       := $(CPP_OBJ:%.c=$(CPP_BUILD_DIR)/%.o)
 CPP_DEP       := $(CPP_OBJ:.o=.d)
 
-.PHONY: all release clean c++
+.PHONY: all release clean c++ bench valgrind
 
 all: main
 
 main: $(MAIN_TARGET)
 c++: $(CPP_TARGET)
+
+bench: $(MAIN_TARGET)
+	perl ./bench.pl
+
+valgrind: $(MAIN_TARGET)
+	perl ./bench.pl --all-tools
 
 $(MAIN_TARGET): $(MAIN_OBJ)
 	$(CC) $(MAIN_OBJ) $(LDFLAGS) -o $@

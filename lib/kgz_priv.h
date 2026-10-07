@@ -18,6 +18,11 @@
 #error KGZ_HUFFMAN_CACHE must be at most 15
 #endif
 
+/* define KGZ_PARANOID to 0 to disable verifcation of the gzip CRC32 and ISIZE on decompression */
+#ifndef KGZ_PARANOID
+#define KGZ_PARANOID 1
+#endif
+
 /* portability stuff */
 #ifndef KGZ_USE_OWN_MACROS
 #include <stdio.h>

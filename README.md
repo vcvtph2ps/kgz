@@ -67,3 +67,4 @@ before including the main header you need to define `KGZ_USE_OWN_MACROS` and the
 You may also define the following things
 
 - `KGZ_HUFFMAN_CACHE` ; adjusts how much of the huffman tree is cached, can affect speed & memory usage ; must be between `3` and `15`
+- `KGZ_PARANOID` ; enables crc32 and other checks ; defaults to `1`

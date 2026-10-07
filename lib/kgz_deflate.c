@@ -30,8 +30,13 @@ bool kgz_dflt_handle_stored(kgz_decompression_context_t* context) {
         return false;
     }
 
+    if(KGZ_UNLIKELY(context->bitstream->current_byte > context->bitstream->data_len)) return false;
+
     uint64_t avail = context->bitstream->data_len - context->bitstream->current_byte;
-    if(KGZ_UNLIKELY((uint64_t) len > avail)) len = (uint16_t) avail;
+    if(KGZ_UNLIKELY((uint64_t) len > avail)) {
+        KGZ_PRINTF("truncated stored block: len %u avail %llu\n", len, (unsigned long long) avail);
+        return false;
+    }
 
     const uint8_t* src = context->bitstream->data + context->bitstream->current_byte;
     if(KGZ_UNLIKELY(!kgz_buffer_insert_bulk(&context->output_buffer, src, len))) return false;

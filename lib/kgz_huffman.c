@@ -133,6 +133,18 @@ kgz_huffman_tree_t* kgz_huffman_tree_create(uint16_t* symbol_lengths, uint16_t s
         bl_count[symbol_lengths[i]]++;
     }
 
+    {
+        int32_t left = 1;
+        for(uint32_t bits = 1; bits <= MAX_BITS; bits++) {
+            left <<= 1;
+            left -= (int32_t) bl_count[bits];
+            if(KGZ_UNLIKELY(left < 0)) { return NULL; } // over subscribed
+        }
+
+        // incomplete sets are only valid as a single one bit code
+        if(KGZ_UNLIKELY(left > 0 && !(leaf_count == 1 && bl_count[1] == 1))) { return NULL; }
+    }
+
     uint16_t next_code[MAX_BITS + 1] = { 0 };
     {
         uint32_t code = 0;
